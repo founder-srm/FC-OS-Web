@@ -6,10 +6,10 @@ import { cn } from "@/lib/utils";
 const serif = Instrument_Serif({
   variable: "--font-serif",
   subsets: ["latin"],
-  weight: "400"
+  weight: "400",
 });
 
-const inter = Inter({subsets:['latin'],variable:'--font-sans'});
+const inter = Inter({ subsets: ["latin"], variable: "--font-sans" });
 
 export const metadata: Metadata = {
   title: "FC OS",
@@ -24,7 +24,14 @@ export default function RootLayout({
   return (
     <html
       lang="en"
-      className={cn("h-full", "antialiased", serif.variable, inter.variable, "font-sans")}
+      className={cn(
+        "dark",
+        "h-full",
+        "antialiased",
+        serif.variable,
+        inter.variable,
+        "font-sans",
+      )}
     >
       <body className="min-h-full flex flex-col">{children}</body>
     </html>
