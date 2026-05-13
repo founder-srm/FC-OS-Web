@@ -26,7 +26,7 @@ const Login = () => {
               <Input
                 id="email"
                 type="email"
-                placeholder="m@example.com"
+                placeholder="name@mail.com"
                 required
               />
             </div>
