@@ -3,12 +3,12 @@
 ## Using Drizzle Kit:
 1. Generate Migrations:
     ```bash
-    npx drizzle-kit generate
+    bunx drizzle-kit generate
     ```
 
 3. Run Migrations:
     ```bash
-    npx drizzle-kit migrate
+    bunx drizzle-kit migrate
     ```
 
 ## Using Supabase CLI:
