@@ -1,5 +1,5 @@
 import { db } from "../database/db";
-import { demoUsers } from "../database/schema";
+import { users } from "../database/schemas/users";
 
 type demoUserValuesType = {
   name: string;
@@ -20,8 +20,8 @@ type demoUserValuesType = {
 export const pushDemoUsers = async ( values: demoUserValuesType[] ) => {
   try {
     console.log(typeof values);
-    await db.insert(demoUsers).values(values);
-    const result = await db.select().from(demoUsers);
+    await db.insert(users).values(values);
+    const result = await db.select().from(users);
     console.log("Successfullt queried the database: ", result);
   } catch (err) {
     console.log("Error querying database: ", err);

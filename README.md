@@ -11,6 +11,8 @@ bun run lint
 
 Do not commit `package-lock.json`, `pnpm-lock.yaml`, or `yarn.lock`.
 
+> Refer to development docs [here](./docs/).
+
 ## License
 
 This project is **source-available but not open source**.
