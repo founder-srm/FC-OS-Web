@@ -1,6 +1,6 @@
 import { pgTable, text, uuid } from "drizzle-orm/pg-core";
-import { domains } from "./domains";
-import { roles } from "./roles";
+import { domains, domainsEnum } from "./domains";
+import { roles, rolesEnum } from "./roles";
 
 export const profiles = pgTable("profiles", {
   // Placeholder until auth.users is wired into the app.
@@ -9,13 +9,13 @@ export const profiles = pgTable("profiles", {
   lastName: text("last_name").notNull(),
   email: text("email").unique().notNull(),
   phone: text("phone").unique().notNull(),
-  roleId: text("role_id")
+  roleId: rolesEnum("role_id")
     .references(() => roles.id, { onDelete: "restrict" })
     .notNull(),
-  domainId: text("domain_id")
-    .references(() => domains.id, {
-      onDelete: "restrict",
-    }),
+  domainId: domainsEnum("domain_id")
+  .references(() => domains.id, {
+    onDelete: "restrict",
+  }),
 });
 
 export type Profile = typeof profiles.$inferSelect;
