@@ -1,4 +1,4 @@
-import { pgEnum, pgTable, serial } from "drizzle-orm/pg-core";
+import { pgEnum, pgTable, text, uniqueIndex } from "drizzle-orm/pg-core";
 
 export const domainsEnum = pgEnum("domain", [
   "technical",
@@ -7,10 +7,14 @@ export const domainsEnum = pgEnum("domain", [
   "outreach",
 ]);
 
-export const domains = pgTable("domains", {
-  id: serial("domain_id").primaryKey(),
-  label: domainsEnum(),
-});
+export const domains = pgTable(
+  "domains",
+  {
+    id: text("domain_id").unique().primaryKey(),
+    label: domainsEnum().notNull(),
+  },
+  (table) => [uniqueIndex("domains_label_unique").on(table.label)],
+);
 
 export type Domain = typeof domains.$inferSelect;
 export type NewDomain = typeof domains.$inferInsert;

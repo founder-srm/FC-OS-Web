@@ -1,4 +1,4 @@
-import { integer, pgTable, text, uuid } from "drizzle-orm/pg-core";
+import { pgTable, text, uuid } from "drizzle-orm/pg-core";
 import { domains } from "./domains";
 import { roles } from "./roles";
 
@@ -8,13 +8,14 @@ export const profiles = pgTable("profiles", {
   firstName: text("first_name").notNull(),
   lastName: text("last_name").notNull(),
   email: text("email").unique().notNull(),
-  phone: integer("phone").unique().notNull(),
-  roleId: integer("role_id")
-    .references(() => roles.id, { onDelete: "set default" })
+  phone: text("phone").unique().notNull(),
+  roleId: text("role_id")
+    .references(() => roles.id, { onDelete: "restrict" })
     .notNull(),
-  domainId: integer("domain_id").references(() => domains.id, {
-    onDelete: "cascade",
-  }),
+  domainId: text("domain_id")
+    .references(() => domains.id, {
+      onDelete: "restrict",
+    }),
 });
 
 export type Profile = typeof profiles.$inferSelect;
