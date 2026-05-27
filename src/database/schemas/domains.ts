@@ -1,4 +1,4 @@
-import { pgEnum, pgTable, serial } from "drizzle-orm/pg-core";
+import { pgEnum, pgTable } from "drizzle-orm/pg-core";
 
 export const domainsEnum = pgEnum("domain", [
   "technical",
@@ -8,8 +8,7 @@ export const domainsEnum = pgEnum("domain", [
 ]);
 
 export const domains = pgTable("domains", {
-  id: serial("domain_id").primaryKey(),
-  label: domainsEnum(),
+  id: domainsEnum("domain_id").primaryKey(),
 });
 
 export type Domain = typeof domains.$inferSelect;

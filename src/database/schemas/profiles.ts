@@ -1,6 +1,6 @@
-import { integer, pgTable, text, uuid } from "drizzle-orm/pg-core";
-import { domains } from "./domains";
-import { roles } from "./roles";
+import { pgTable, text, uuid } from "drizzle-orm/pg-core";
+import { domains, domainsEnum } from "./domains";
+import { roles, rolesEnum } from "./roles";
 
 export const profiles = pgTable("profiles", {
   // Placeholder until auth.users is wired into the app.
@@ -8,12 +8,12 @@ export const profiles = pgTable("profiles", {
   firstName: text("first_name").notNull(),
   lastName: text("last_name").notNull(),
   email: text("email").unique().notNull(),
-  phone: integer("phone").unique().notNull(),
-  roleId: integer("role_id")
-    .references(() => roles.id, { onDelete: "set default" })
+  phone: text("phone").unique().notNull(),
+  roleId: rolesEnum("role_id")
+    .references(() => roles.id, { onDelete: "restrict" })
     .notNull(),
-  domainId: integer("domain_id").references(() => domains.id, {
-    onDelete: "cascade",
+  domainId: domainsEnum("domain_id").references(() => domains.id, {
+    onDelete: "restrict",
   }),
 });
 
