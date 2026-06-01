@@ -1,0 +1,1 @@
+ALTER TABLE "meetings" ADD CONSTRAINT "meetings_domain_domains_domain_id_fk" FOREIGN KEY ("domain") REFERENCES "public"."domains"("domain_id") ON DELETE restrict ON UPDATE no action;

@@ -4,3 +4,4 @@ export * from "./profiles";
 export * from "./relations";
 export * from "./role_permissions";
 export * from "./roles";
+export * from "./meetings";
