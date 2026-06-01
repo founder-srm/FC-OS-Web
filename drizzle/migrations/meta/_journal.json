@@ -36,6 +36,48 @@
       "when": 1779792435638,
       "tag": "0004_faithful_maginty",
       "breakpoints": true
+    },
+    {
+      "idx": 5,
+      "version": "7",
+      "when": 1780322109000,
+      "tag": "0005_melodic_jazinda",
+      "breakpoints": true
+    },
+    {
+      "idx": 6,
+      "version": "7",
+      "when": 1780322862914,
+      "tag": "0006_thankful_wallop",
+      "breakpoints": true
+    },
+    {
+      "idx": 7,
+      "version": "7",
+      "when": 1780324101508,
+      "tag": "0007_whole_rockslide",
+      "breakpoints": true
+    },
+    {
+      "idx": 8,
+      "version": "7",
+      "when": 1780324222400,
+      "tag": "0008_nervous_korath",
+      "breakpoints": true
+    },
+    {
+      "idx": 9,
+      "version": "7",
+      "when": 1780324962636,
+      "tag": "0009_wet_living_tribunal",
+      "breakpoints": true
+    },
+    {
+      "idx": 10,
+      "version": "7",
+      "when": 1780325193281,
+      "tag": "0010_fast_scarlet_spider",
+      "breakpoints": true
     }
   ]
 }
