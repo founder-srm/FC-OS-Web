@@ -1,5 +1,5 @@
 import {pgTable, text, uuid, timestamp, pgEnum} from "drizzle-orm/pg-core";
-import { meetings } from "./meetings";
+import { activity } from "./activity";
 import { profiles } from "./profiles";
 
 export const attendanceStatusEnum = pgEnum("attendance_status", [
@@ -10,7 +10,7 @@ export const attendanceStatusEnum = pgEnum("attendance_status", [
 export const attendance = pgTable("attendance", {
     id : uuid("id").defaultRandom().primaryKey(),
     profileId : uuid("profile_id").references(() => profiles.id, { onDelete: "cascade" }).notNull(),
-    meetingId : uuid("meeting_id").references(() => meetings.id, { onDelete: "cascade" }).notNull(),
+    activityId : uuid("activity_id").references(() => activity.id, { onDelete: "restrict" }).notNull(),
     status : attendanceStatusEnum("status").notNull(),
     timestamp : timestamp("timestamp").defaultNow().notNull(),
 });
