@@ -6,7 +6,8 @@ export const rolesEnum = pgEnum("role_label", [
   "co-lead",
   "lead",
   "human resource manager",
-  "leadership",
+  "vice president",
+  "president",
 ]);
 export const scopeEnum = pgEnum("scope", ["domain", "global"]);
 
