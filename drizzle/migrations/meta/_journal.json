@@ -92,6 +92,34 @@
       "when": 1780468147462,
       "tag": "0012_dazzling_moon_knight",
       "breakpoints": true
+    },
+    {
+      "idx": 13,
+      "version": "7",
+      "when": 1780477550793,
+      "tag": "0013_thick_winter_soldier",
+      "breakpoints": true
+    },
+    {
+      "idx": 14,
+      "version": "7",
+      "when": 1780477631119,
+      "tag": "0014_famous_meteorite",
+      "breakpoints": true
+    },
+    {
+      "idx": 15,
+      "version": "7",
+      "when": 1780576059129,
+      "tag": "0015_minor_madrox",
+      "breakpoints": true
+    },
+    {
+      "idx": 16,
+      "version": "7",
+      "when": 1780576827721,
+      "tag": "0016_bitter_agent_zero",
+      "breakpoints": true
     }
   ]
 }

@@ -9,12 +9,6 @@ export const profiles = pgTable("profiles", {
   lastName: text("last_name").notNull(),
   email: text("email").unique().notNull(),
   phone: text("phone").unique().notNull(),
-  roleId: rolesEnum("role_id")
-    .references(() => roles.id, { onDelete: "restrict" })
-    .notNull(),
-  domainId: domainsEnum("domain_id").references(() => domains.id, {
-    onDelete: "restrict",
-  }),
 });
 
 export type Profile = typeof profiles.$inferSelect;
