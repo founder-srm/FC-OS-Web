@@ -14,10 +14,22 @@ const HomePage = () => {
       />
       <div className="absolute inset-0 " />
       <div className="relative z-10 flex w-full items-center justify-center flex-col mb-40">
-        <div className="max-w-xl rounded-2xl font-serif text-9xl tracking-tight">FC OS</div>
+        <div className="max-w-xl rounded-2xl font-serif text-9xl tracking-tight">
+          FC OS
+        </div>
         <div className="flex items-center gap-4 font-serif mt-6">
-          <Link href={"/login"} className="text-xl px-5 py-1 backdrop-blur-xs rounded-xl border border-white/10 shadow-2xl">Log In</Link>
-          <Link href={"/login"} className="text-xl px-5 py-1 backdrop-blur-xs rounded-xl border border-white/10 shadow-2xl">Request Access</Link>
+          <Link
+            href={"/login"}
+            className="text-xl px-5 py-1 backdrop-blur-xs rounded-xl border border-white/10 shadow-2xl"
+          >
+            Log In
+          </Link>
+          <Link
+            href={"/signup"}
+            className="text-xl px-5 py-1 backdrop-blur-xs rounded-xl border border-white/10 shadow-2xl"
+          >
+            Request Access
+          </Link>
         </div>
       </div>
     </main>

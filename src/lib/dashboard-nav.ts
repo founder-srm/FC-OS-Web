@@ -7,6 +7,7 @@ import {
   MonitorUp,
   PersonStanding,
   Target,
+  UserCheck,
   Users,
 } from "lucide-react";
 
@@ -18,6 +19,8 @@ export type DashboardNavItem = {
   href: string;
   badge?: string;
   disabled?: boolean;
+  // When true, only HRM / leadership (approvers) see this item.
+  requiresApprover?: boolean;
 };
 
 export type DashboardNavSection = {
@@ -94,6 +97,20 @@ export const dashboardSidebarConfig = {
           description: "Planning and execution workspace",
           // badge: "Exec",
           // disabled: true,
+        },
+      ],
+    },
+    {
+      id: "administration",
+      label: "Administration",
+      items: [
+        {
+          id: "member-requests",
+          label: "Member Requests",
+          icon: UserCheck,
+          href: "/dashboard/member-requests",
+          description: "Approve or reject pending members",
+          requiresApprover: true,
         },
       ],
     },
