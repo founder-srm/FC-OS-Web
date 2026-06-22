@@ -90,10 +90,10 @@ export const dashboardSidebarConfig = {
           // disabled: true,
         },
         {
-          id: "pod",
-          label: "Pod",
+          id: "opus",
+          label: "Opus",
           icon: Target,
-          href: "/dashboard/POD",
+          href: "/dashboard/opus",
           description: "Planning and execution workspace",
           // badge: "Exec",
           // disabled: true,

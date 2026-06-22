@@ -59,6 +59,6 @@ sufficient for mutations.
   `isApprover` to `AppSidebar`.
 - `src/lib/dashboard-nav.ts` — single source of truth for sidebar nav (sections, hrefs,
   `requiresApprover`, `disabled`/`Soon` flags). Add tools here.
-- POD (`/dashboard/POD`) is currently a stub page; its data model is the `tasks` schema
-  (status enum, domain, `assignedBy` / `assignedTo[]`, deadline). Build the Opus/POD
+- Opus (`/dashboard/opus`) is currently a stub page; its data model is the `tasks` schema
+  (status enum, domain, `assignedBy` / `assignedTo[]`, deadline). Build the Opus
   workspace against it.
