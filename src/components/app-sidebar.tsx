@@ -76,7 +76,10 @@ function SidebarNavItem({ item, isActive }: SidebarNavItemProps) {
   );
 }
 
-export function AppSidebar(props: ComponentProps<typeof Sidebar>) {
+export function AppSidebar({
+  isApprover = false,
+  ...props
+}: ComponentProps<typeof Sidebar> & { isApprover?: boolean }) {
   const pathname = usePathname();
   const activeItem = getDashboardNavItemByPathname(pathname);
 
@@ -109,22 +112,30 @@ export function AppSidebar(props: ComponentProps<typeof Sidebar>) {
       <SidebarSeparator className="mx-auto" />
 
       <SidebarContent>
-        {dashboardSidebarConfig.sections.map((section) => (
-          <SidebarGroup key={section.id}>
-            <SidebarGroupLabel>{section.label}</SidebarGroupLabel>
-            <SidebarGroupContent>
-              <SidebarMenu>
-                {section.items.map((item) => (
-                  <SidebarNavItem
-                    key={item.id}
-                    item={item}
-                    isActive={activeItem.id === item.id}
-                  />
-                ))}
-              </SidebarMenu>
-            </SidebarGroupContent>
-          </SidebarGroup>
-        ))}
+        {dashboardSidebarConfig.sections.map((section) => {
+          const items = section.items.filter(
+            (item) =>
+              !("requiresApprover" in item && item.requiresApprover) ||
+              isApprover,
+          );
+          if (items.length === 0) return null;
+          return (
+            <SidebarGroup key={section.id}>
+              <SidebarGroupLabel>{section.label}</SidebarGroupLabel>
+              <SidebarGroupContent>
+                <SidebarMenu>
+                  {items.map((item) => (
+                    <SidebarNavItem
+                      key={item.id}
+                      item={item}
+                      isActive={activeItem.id === item.id}
+                    />
+                  ))}
+                </SidebarMenu>
+              </SidebarGroupContent>
+            </SidebarGroup>
+          );
+        })}
       </SidebarContent>
 
       <SidebarSeparator className="mx-auto" />
@@ -139,20 +150,28 @@ export function AppSidebar(props: ComponentProps<typeof Sidebar>) {
           </p>
         </div> */}
       </SidebarFooter>
-        <SidebarMenu>
-          <SidebarMenuItem className="flex items-center justify-center">
-            <SidebarMenuButton size={"lg"} asChild>
-              <Link href={"/dashboard/profile"}>
+      <SidebarMenu>
+        <SidebarMenuItem className="flex items-center justify-center">
+          <SidebarMenuButton size={"lg"} asChild>
+            <Link href={"/dashboard/profile"}>
               <Avatar size={"lg"}>
-                <AvatarImage src={"https://github.com/shadcn.png"} alt={"Someone's Image"} className="rounded-lg" />
-                <AvatarFallback className="font-serif leading-snug">FC</AvatarFallback>
+                <AvatarImage
+                  src={"https://github.com/shadcn.png"}
+                  alt={"Someone's Image"}
+                  className="rounded-lg"
+                />
+                <AvatarFallback className="font-serif leading-snug">
+                  FC
+                </AvatarFallback>
                 <AvatarBadge className="bg-primary" />
               </Avatar>
-              <h1 className="font-serif text-2xl text-sidebar-foreground">Om Pratap Dhaker</h1>
-              </Link>
-            </SidebarMenuButton>
-          </SidebarMenuItem>
-        </SidebarMenu>
+              <h1 className="font-serif text-2xl text-sidebar-foreground">
+                Om Pratap Dhaker
+              </h1>
+            </Link>
+          </SidebarMenuButton>
+        </SidebarMenuItem>
+      </SidebarMenu>
       <SidebarRail />
     </Sidebar>
   );
