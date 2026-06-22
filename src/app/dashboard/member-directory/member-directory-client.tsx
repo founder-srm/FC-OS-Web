@@ -176,7 +176,7 @@ export default function MemberDirectoryClient({
               setSearch(e.target.value);
               resetPage();
             }}
-            className="pl-9"
+            style={{ paddingLeft: "2.25rem" }}
           />
         </div>
 
