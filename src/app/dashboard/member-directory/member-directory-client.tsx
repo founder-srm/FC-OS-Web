@@ -79,7 +79,9 @@ function capitalize(s: string) {
   return s.charAt(0).toUpperCase() + s.slice(1);
 }
 
-function highestRole(rolePairs: { role: string; domain: string | null }[]): string {
+function highestRole(
+  rolePairs: { role: string; domain: string | null }[],
+): string {
   let best = -1;
   for (const { role } of rolePairs) {
     const idx = ROLES.indexOf(role as (typeof ROLES)[number]);
@@ -405,7 +407,9 @@ export default function MemberDirectoryClient({
                     <SheetTitle>
                       {selected.firstName} {selected.lastName}
                     </SheetTitle>
-                    <SheetDescription>{highestRole(selected.rolePairs)}</SheetDescription>
+                    <SheetDescription>
+                      {highestRole(selected.rolePairs)}
+                    </SheetDescription>
                   </div>
                 </div>
               </SheetHeader>

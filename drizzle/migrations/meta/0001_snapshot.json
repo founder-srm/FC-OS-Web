@@ -100,12 +100,8 @@
           "name": "profiles_role_id_roles_role_id_fk",
           "tableFrom": "profiles",
           "tableTo": "roles",
-          "columnsFrom": [
-            "role_id"
-          ],
-          "columnsTo": [
-            "role_id"
-          ],
+          "columnsFrom": ["role_id"],
+          "columnsTo": ["role_id"],
           "onDelete": "restrict",
           "onUpdate": "no action"
         },
@@ -113,12 +109,8 @@
           "name": "profiles_domain_id_domains_domain_id_fk",
           "tableFrom": "profiles",
           "tableTo": "domains",
-          "columnsFrom": [
-            "domain_id"
-          ],
-          "columnsTo": [
-            "domain_id"
-          ],
+          "columnsFrom": ["domain_id"],
+          "columnsTo": ["domain_id"],
           "onDelete": "restrict",
           "onUpdate": "no action"
         }
@@ -128,16 +120,12 @@
         "profiles_email_unique": {
           "name": "profiles_email_unique",
           "nullsNotDistinct": false,
-          "columns": [
-            "email"
-          ]
+          "columns": ["email"]
         },
         "profiles_phone_unique": {
           "name": "profiles_phone_unique",
           "nullsNotDistinct": false,
-          "columns": [
-            "phone"
-          ]
+          "columns": ["phone"]
         }
       },
       "policies": {},
@@ -192,12 +180,7 @@
     "public.domain": {
       "name": "domain",
       "schema": "public",
-      "values": [
-        "technical",
-        "creatives",
-        "operations",
-        "outreach"
-      ]
+      "values": ["technical", "creatives", "operations", "outreach"]
     },
     "public.role_label": {
       "name": "role_label",

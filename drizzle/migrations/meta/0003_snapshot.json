@@ -45,9 +45,7 @@
         "domains_domain_id_unique": {
           "name": "domains_domain_id_unique",
           "nullsNotDistinct": false,
-          "columns": [
-            "domain_id"
-          ]
+          "columns": ["domain_id"]
         }
       },
       "policies": {},
@@ -108,12 +106,8 @@
           "name": "profiles_role_id_roles_role_id_fk",
           "tableFrom": "profiles",
           "tableTo": "roles",
-          "columnsFrom": [
-            "role_id"
-          ],
-          "columnsTo": [
-            "role_id"
-          ],
+          "columnsFrom": ["role_id"],
+          "columnsTo": ["role_id"],
           "onDelete": "restrict",
           "onUpdate": "no action"
         },
@@ -121,12 +115,8 @@
           "name": "profiles_domain_id_domains_domain_id_fk",
           "tableFrom": "profiles",
           "tableTo": "domains",
-          "columnsFrom": [
-            "domain_id"
-          ],
-          "columnsTo": [
-            "domain_id"
-          ],
+          "columnsFrom": ["domain_id"],
+          "columnsTo": ["domain_id"],
           "onDelete": "restrict",
           "onUpdate": "no action"
         }
@@ -136,16 +126,12 @@
         "profiles_email_unique": {
           "name": "profiles_email_unique",
           "nullsNotDistinct": false,
-          "columns": [
-            "email"
-          ]
+          "columns": ["email"]
         },
         "profiles_phone_unique": {
           "name": "profiles_phone_unique",
           "nullsNotDistinct": false,
-          "columns": [
-            "phone"
-          ]
+          "columns": ["phone"]
         }
       },
       "policies": {},
@@ -202,9 +188,7 @@
         "roles_role_id_unique": {
           "name": "roles_role_id_unique",
           "nullsNotDistinct": false,
-          "columns": [
-            "role_id"
-          ]
+          "columns": ["role_id"]
         }
       },
       "policies": {},
@@ -234,12 +218,8 @@
           "name": "role_permissions_role_id_roles_role_id_fk",
           "tableFrom": "role_permissions",
           "tableTo": "roles",
-          "columnsFrom": [
-            "role_id"
-          ],
-          "columnsTo": [
-            "role_id"
-          ],
+          "columnsFrom": ["role_id"],
+          "columnsTo": ["role_id"],
           "onDelete": "cascade",
           "onUpdate": "no action"
         },
@@ -247,12 +227,8 @@
           "name": "role_permissions_permission_id_permissions_permission_id_fk",
           "tableFrom": "role_permissions",
           "tableTo": "permissions",
-          "columnsFrom": [
-            "permission_id"
-          ],
-          "columnsTo": [
-            "permission_id"
-          ],
+          "columnsFrom": ["permission_id"],
+          "columnsTo": ["permission_id"],
           "onDelete": "cascade",
           "onUpdate": "no action"
         }
@@ -260,10 +236,7 @@
       "compositePrimaryKeys": {
         "role_permissions_role_id_permission_id_pk": {
           "name": "role_permissions_role_id_permission_id_pk",
-          "columns": [
-            "role_id",
-            "permission_id"
-          ]
+          "columns": ["role_id", "permission_id"]
         }
       },
       "uniqueConstraints": {},
@@ -301,9 +274,7 @@
         "permissions_permission_id_unique": {
           "name": "permissions_permission_id_unique",
           "nullsNotDistinct": false,
-          "columns": [
-            "permission_id"
-          ]
+          "columns": ["permission_id"]
         }
       },
       "policies": {},
@@ -315,12 +286,7 @@
     "public.domain": {
       "name": "domain",
       "schema": "public",
-      "values": [
-        "technical",
-        "creatives",
-        "operations",
-        "outreach"
-      ]
+      "values": ["technical", "creatives", "operations", "outreach"]
     },
     "public.role_label": {
       "name": "role_label",
@@ -337,10 +303,7 @@
     "public.scope": {
       "name": "scope",
       "schema": "public",
-      "values": [
-        "domain",
-        "global"
-      ]
+      "values": ["domain", "global"]
     }
   },
   "schemas": {},
