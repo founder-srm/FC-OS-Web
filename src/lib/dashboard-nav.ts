@@ -98,6 +98,13 @@ export const dashboardSidebarConfig = {
           // badge: "Exec",
           // disabled: true,
         },
+        {
+          id: "member-directory",
+          label: "Member Directory",
+          icon: BookUser,
+          href: "/dashboard/member-directory",
+          description: "Browse and contact club members",
+        },
       ],
     },
     {
@@ -111,20 +118,6 @@ export const dashboardSidebarConfig = {
           href: "/dashboard/member-requests",
           description: "Approve or reject pending members",
           requiresApprover: true,
-        },
-      ],
-    },
-    {
-      id: "coming-soon",
-      label: "Coming Soon",
-      items: [
-        {
-          id: "member-directory",
-          label: "Member Directory",
-          icon: BookUser,
-          href: "/dashboard/member-directory",
-          badge: "Soon",
-          description: "More to come soon",
         },
       ],
     },
