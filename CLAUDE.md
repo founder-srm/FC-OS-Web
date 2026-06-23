@@ -45,8 +45,9 @@ touching that area:
 
 - **`### Auth + onboarding/approval flow`** — passwordless OTP, `proxy.ts` gating, the
   two-stage onboarding/approval state machine, and the `force-dynamic` requirement.
-- **`### RBAC`** — `roles`/`permissions`/`user_roles` model, `isApprover`, where to
-  enforce authorization.
+- **`### RBAC`** — `roles`/`permissions`/`user_roles` model, the
+  `isApprover`/`isDomainLead`/`isReadOnly` flags + `requireWriteAccess` guard, the
+  `app_settings` domain-lead approval toggle, where to enforce authorization.
 - **`### Data layer`** — schema-per-file convention, `dbActions.ts` trust boundary,
   `db.batch()` (no interactive transactions on neon-http).
 - **`### App structure`** — gated dashboard shell, `dashboard-nav.ts`, Opus.

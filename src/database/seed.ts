@@ -5,6 +5,7 @@
 import "dotenv/config";
 
 import { db } from "./db";
+import { appSettings } from "./schemas/app_settings";
 import { domains } from "./schemas/domains";
 import { roles } from "./schemas/roles";
 
@@ -25,6 +26,9 @@ const ROLES = [
   { id: "human resource manager", scope: "global" },
   { id: "vice president", scope: "global" },
   { id: "president", scope: "global" },
+  // Read-only roles, not tied to a domain.
+  { id: "advisor", scope: "global" },
+  { id: "alumni", scope: "global" },
 ] as const;
 
 async function seed() {
@@ -38,7 +42,10 @@ async function seed() {
     .values(ROLES.map((r) => ({ id: r.id, scope: r.scope })))
     .onConflictDoNothing();
 
-  console.log("Seeded domains + roles.");
+  // Singleton settings row (id=1), defaults applied by the schema.
+  await db.insert(appSettings).values({ id: 1 }).onConflictDoNothing();
+
+  console.log("Seeded domains + roles + settings.");
 }
 
 seed()

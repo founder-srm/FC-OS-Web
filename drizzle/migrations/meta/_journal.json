@@ -127,6 +127,13 @@
       "when": 1782132977048,
       "tag": "0017_optimal_vision",
       "breakpoints": true
+    },
+    {
+      "idx": 18,
+      "version": "7",
+      "when": 1782243151371,
+      "tag": "0018_sudden_nightcrawler",
+      "breakpoints": true
     }
   ]
 }

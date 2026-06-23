@@ -12,6 +12,13 @@ const APPROVER_ROLES = new Set<string>([
   "president",
 ]);
 
+// Domain leads — may approve members in their own domain when an approver has
+// enabled `domainLeadsCanApprove` in app settings.
+const DOMAIN_LEAD_ROLES = new Set<string>(["lead", "co-lead"]);
+
+// Read-only roles: view the whole platform, cannot mutate anything.
+const READ_ONLY_ROLES = new Set<string>(["advisor", "alumni"]);
+
 export type ProfileStatus = "pending_approval" | "approved" | "rejected";
 
 export type AccessContext = {
@@ -24,6 +31,10 @@ export type AccessContext = {
   /** Domains the user belongs to (empty for global-only roles). */
   domainIds: string[];
   isApprover: boolean;
+  /** Has a domain-lead role (`lead`/`co-lead`). */
+  isDomainLead: boolean;
+  /** Read-only role (`advisor`/`alumni`) — must not perform mutations. */
+  isReadOnly: boolean;
 };
 
 export type AuthState =
@@ -63,6 +74,8 @@ export async function getAuthState(): Promise<AuthState> {
     ),
   ];
   const isApprover = roleIds.some((r) => APPROVER_ROLES.has(r));
+  const isDomainLead = roleIds.some((r) => DOMAIN_LEAD_ROLES.has(r));
+  const isReadOnly = roleIds.some((r) => READ_ONLY_ROLES.has(r));
 
   return {
     kind: "active",
@@ -73,6 +86,8 @@ export async function getAuthState(): Promise<AuthState> {
       roleIds,
       domainIds,
       isApprover,
+      isDomainLead,
+      isReadOnly,
     },
   };
 }
@@ -81,4 +96,18 @@ export async function getAuthState(): Promise<AuthState> {
 export async function getAccessContext(): Promise<AccessContext | null> {
   const state = await getAuthState();
   return state.kind === "active" ? state.ctx : null;
+}
+
+/**
+ * Trust-boundary guard for mutating Server Actions. Returns the access context
+ * for an approved, write-capable user, or an `{ error }` to return to the
+ * client. Every mutating Server Action must gate through this.
+ */
+export async function requireWriteAccess(): Promise<
+  AccessContext | { error: string }
+> {
+  const ctx = await getAccessContext();
+  if (!ctx) return { error: "You are not signed in." };
+  if (ctx.isReadOnly) return { error: "Your role is read-only." };
+  return ctx;
 }

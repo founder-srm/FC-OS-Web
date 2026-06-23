@@ -1,4 +1,5 @@
 export * from "./activity";
+export * from "./app_settings";
 export * from "./attendance";
 export * from "./domains";
 export * from "./permissions";

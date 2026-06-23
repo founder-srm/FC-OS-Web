@@ -8,6 +8,9 @@ export const rolesEnum = pgEnum("role_label", [
   "human resource manager",
   "vice president",
   "president",
+  // Read-only roles: full view access across FC OS, no mutations.
+  "advisor",
+  "alumni",
 ]);
 export const scopeEnum = pgEnum("scope", ["domain", "global"]);
 

@@ -1,18 +1,28 @@
 import { redirect } from "next/navigation";
 
 import { getAccessContext } from "@/lib/auth/context";
-import { getPendingMembers } from "@/utils/dbActions";
+import { getAppSettings, getPendingMembers } from "@/utils/dbActions";
 import MemberRequestRow from "./member-request-row";
 
 export const dynamic = "force-dynamic";
 
 export default async function MemberRequestsPage() {
   const ctx = await getAccessContext();
-  // The dashboard layout already gated auth/approval; this guards the
-  // approver-only capability.
-  if (!ctx?.isApprover) redirect("/dashboard");
+  if (!ctx) redirect("/dashboard");
 
-  const members = await getPendingMembers();
+  const { domainLeadsCanApprove } = await getAppSettings();
+  const isDomainLeadApprover = ctx.isDomainLead && domainLeadsCanApprove;
+  // The dashboard layout already gated auth/approval; this guards the
+  // approver-only capability (HRM/leadership, or enabled domain leads).
+  if (!ctx.isApprover && !isDomainLeadApprover) redirect("/dashboard");
+
+  const allPending = await getPendingMembers();
+  // Domain leads only see applicants requesting one of their own domains.
+  const members = ctx.isApprover
+    ? allPending
+    : allPending.filter((m) =>
+        m.domains.some((d) => ctx.domainIds.includes(d)),
+      );
 
   return (
     <div className="flex flex-col gap-4">

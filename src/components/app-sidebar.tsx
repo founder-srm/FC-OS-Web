@@ -78,8 +78,13 @@ function SidebarNavItem({ item, isActive }: SidebarNavItemProps) {
 
 export function AppSidebar({
   isApprover = false,
+  canApproveMembers = false,
   ...props
-}: ComponentProps<typeof Sidebar> & { isApprover?: boolean }) {
+}: ComponentProps<typeof Sidebar> & {
+  isApprover?: boolean;
+  // Enabled domain leads can also reach Member Requests.
+  canApproveMembers?: boolean;
+}) {
   const pathname = usePathname();
   const activeItem = getDashboardNavItemByPathname(pathname);
 
@@ -116,7 +121,8 @@ export function AppSidebar({
           const items = section.items.filter(
             (item) =>
               !("requiresApprover" in item && item.requiresApprover) ||
-              isApprover,
+              isApprover ||
+              (item.id === "member-requests" && canApproveMembers),
           );
           if (items.length === 0) return null;
           return (

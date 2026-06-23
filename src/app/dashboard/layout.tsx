@@ -10,6 +10,7 @@ import {
 } from "@/components/ui/sidebar";
 import { TooltipProvider } from "@/components/ui/tooltip";
 import { getAuthState } from "@/lib/auth/context";
+import { getAppSettings } from "@/utils/dbActions";
 
 export const metadata: Metadata = {
   title: "FC OS • Dashboard",
@@ -31,10 +32,18 @@ export default async function RootLayout({
   if (state.kind === "no-profile") redirect("/onboarding");
   if (state.ctx.status !== "approved") redirect("/pending");
 
+  const { domainLeadsCanApprove } = await getAppSettings();
+  const canApproveMembers =
+    state.ctx.isApprover || (state.ctx.isDomainLead && domainLeadsCanApprove);
+
   return (
     <TooltipProvider>
       <SidebarProvider>
-        <AppSidebar collapsible={"icon"} isApprover={state.ctx.isApprover} />
+        <AppSidebar
+          collapsible={"icon"}
+          isApprover={state.ctx.isApprover}
+          canApproveMembers={canApproveMembers}
+        />
         <SidebarInset>
           <header className="flex h-16 shrink-0 items-center gap-2">
             <div className="flex items-center gap-2 px-4">

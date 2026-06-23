@@ -4,9 +4,14 @@
 
 import { eq } from "drizzle-orm";
 import { db } from "../database/db";
+import { appSettings } from "../database/schemas/app_settings";
 import { type NewProfile, profiles } from "../database/schemas/profiles";
+import type { rolesEnum } from "../database/schemas/roles";
 import { userRoles } from "../database/schemas/user_roles";
 import type { OnboardingInput } from "../lib/validation/onboarding";
+
+export type RoleLabel = (typeof rolesEnum.enumValues)[number];
+type NewUserRole = typeof userRoles.$inferInsert;
 
 export const pushProfiles = async (values: NewProfile[]) => {
   await db.insert(profiles).values(values);
@@ -179,6 +184,130 @@ export const getApprovedMembers = async () => {
 export type ApprovedMember = Awaited<
   ReturnType<typeof getApprovedMembers>
 >[number];
+
+/** Loads a profile's basic identity + role/domain pairs, for the profile page. */
+export const getProfile = async (profileId: string) => {
+  const rows = await db
+    .select({
+      id: profiles.id,
+      firstName: profiles.firstName,
+      lastName: profiles.lastName,
+      email: profiles.email,
+      phone: profiles.phone,
+      role: userRoles.role,
+      domain: userRoles.domain,
+    })
+    .from(profiles)
+    .leftJoin(userRoles, eq(userRoles.id, profiles.id))
+    .where(eq(profiles.id, profileId));
+
+  const first = rows[0];
+  if (!first) return null;
+
+  const roles = [...new Set(rows.map((r) => r.role).filter((r) => r !== null))];
+  const domains = [
+    ...new Set(rows.map((r) => r.domain).filter((d) => d !== null)),
+  ];
+
+  return {
+    id: first.id,
+    firstName: first.firstName,
+    lastName: first.lastName,
+    email: first.email,
+    phone: first.phone,
+    roles,
+    domains,
+  };
+};
+
+/** Reads the singleton app settings row, falling back to defaults if unseeded. */
+export const getAppSettings = async (): Promise<{
+  domainLeadsCanApprove: boolean;
+}> => {
+  const [row] = await db
+    .select({ domainLeadsCanApprove: appSettings.domainLeadsCanApprove })
+    .from(appSettings)
+    .where(eq(appSettings.id, 1))
+    .limit(1);
+
+  return { domainLeadsCanApprove: row?.domainLeadsCanApprove ?? false };
+};
+
+/** Upserts the singleton settings row to toggle domain-lead approval. */
+export const setDomainLeadsCanApprove = async (enabled: boolean) => {
+  await db
+    .insert(appSettings)
+    .values({ id: 1, domainLeadsCanApprove: enabled, updatedAt: new Date() })
+    .onConflictDoUpdate({
+      target: appSettings.id,
+      set: { domainLeadsCanApprove: enabled, updatedAt: new Date() },
+    });
+};
+
+/** Returns the domain ids a profile belongs to (from `user_roles`). */
+export const getProfileDomains = async (
+  profileId: string,
+): Promise<string[]> => {
+  const rows = await db
+    .select({ domain: userRoles.domain })
+    .from(userRoles)
+    .where(eq(userRoles.id, profileId));
+
+  return [
+    ...new Set(
+      rows
+        .map((r) => r.domain)
+        .filter((d): d is NonNullable<typeof d> => d !== null),
+    ),
+  ];
+};
+
+// Roles that aren't tied to a domain (mirrors `seed.ts`): leadership + HRM and
+// the read-only roles. Stored in `user_roles` with `domain = null`.
+const GLOBAL_ROLES = new Set<string>([
+  "human resource manager",
+  "vice president",
+  "president",
+  "advisor",
+  "alumni",
+]);
+
+/**
+ * Replaces a profile's role assignments. Domain-scoped roles keep their domain;
+ * global roles collapse to a single `domain = null` row (deduped). Atomic via
+ * `db.batch()` since neon-http has no interactive transactions.
+ */
+export const setMemberRoles = async (
+  profileId: string,
+  assignments: { role: RoleLabel; domain: string }[],
+) => {
+  const seenGlobal = new Set<string>();
+  const rows: NewUserRole[] = [];
+
+  for (const { role, domain } of assignments) {
+    if (GLOBAL_ROLES.has(role)) {
+      if (seenGlobal.has(role)) continue;
+      seenGlobal.add(role);
+      rows.push({ id: profileId, role, domain: null });
+    } else {
+      rows.push({
+        id: profileId,
+        role,
+        domain: domain as NewUserRole["domain"],
+      });
+    }
+  }
+
+  if (rows.length === 0) {
+    await db.delete(userRoles).where(eq(userRoles.id, profileId));
+    return;
+  }
+
+  await db.batch([
+    db.delete(userRoles).where(eq(userRoles.id, profileId)),
+    db.insert(userRoles).values(rows),
+  ]);
+};
 
 /** Records an HRM/leadership approval decision + audit. */
 export const setMemberDecision = async (
