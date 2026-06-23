@@ -7,7 +7,8 @@ This file provides guidance to Claude Code (claude.ai/code) when working with co
 FC OS is the **Founders Club operating system** — one Next.js app that houses every
 internal club tool behind a single dashboard and auth/approval gate. Tools live under
 `src/app/dashboard/`: **MoM**, **Attendance Tracker**, **FC TV CMS**, **Performance
-Tracker**, **Member Directory**, **Member Requests** (HRM admin), and **Opus** — the PM
+Tracker**, **Member Directory** (approvers edit roles/domains + remove members),
+**Member Requests** (HRM admin), and **Opus** — the PM
 tool that is the current focus of active development. Users are
 club members.
 

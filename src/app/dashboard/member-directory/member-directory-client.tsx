@@ -1,7 +1,29 @@
 "use client";
 
-import { ChevronDown, Mail, Phone, Search } from "lucide-react";
-import { useState } from "react";
+import {
+  ChevronDown,
+  Loader2,
+  Mail,
+  Pencil,
+  Phone,
+  Plus,
+  Search,
+  Trash2,
+  X,
+} from "lucide-react";
+import { useState, useTransition } from "react";
+import { toast } from "sonner";
+import {
+  AlertDialog,
+  AlertDialogAction,
+  AlertDialogCancel,
+  AlertDialogContent,
+  AlertDialogDescription,
+  AlertDialogFooter,
+  AlertDialogHeader,
+  AlertDialogTitle,
+  AlertDialogTrigger,
+} from "@/components/ui/alert-dialog";
 import { Avatar, AvatarFallback } from "@/components/ui/avatar";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
@@ -16,6 +38,13 @@ import {
   DropdownMenuTrigger,
 } from "@/components/ui/dropdown-menu";
 import { Input } from "@/components/ui/input";
+import {
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from "@/components/ui/select";
 import {
   Sheet,
   SheetContent,
@@ -32,6 +61,7 @@ import {
   TableRow,
 } from "@/components/ui/table";
 import type { ApprovedMember } from "@/utils/dbActions";
+import { removeMember, updateMember } from "./actions";
 
 const PAGE_SIZE = 20;
 
@@ -108,10 +138,267 @@ function formatRoles(
   return result;
 }
 
+// Roles an approver can assign per domain vs. globally (mirrors the seed scopes).
+const DOMAIN_SCOPED_ROLES = [
+  "member",
+  "associate lead",
+  "co-lead",
+  "lead",
+] as const;
+const GLOBAL_ROLE_LIST = [
+  "human resource manager",
+  "vice president",
+  "president",
+  "advisor",
+  "alumni",
+] as const;
+
+/**
+ * Approver-only editor for a member's domains/roles plus soft-remove. Mounted
+ * with `key={member.id}` so its draft state resets when a different member opens.
+ */
+function MemberManagePanel({
+  member,
+  onDone,
+}: {
+  member: ApprovedMember;
+  onDone: () => void;
+}) {
+  const [editing, setEditing] = useState(false);
+  const [isPending, startTransition] = useTransition();
+  const [domainRoles, setDomainRoles] = useState<Record<string, string>>(() =>
+    Object.fromEntries(
+      member.rolePairs
+        .filter((p) => p.domain !== null)
+        .map((p) => [p.domain as string, p.role]),
+    ),
+  );
+  const [globalRoles, setGlobalRoles] = useState<Set<string>>(
+    () =>
+      new Set(
+        member.rolePairs.filter((p) => p.domain === null).map((p) => p.role),
+      ),
+  );
+
+  const availableDomains = DOMAINS.filter((d) => !(d in domainRoles));
+  const assignmentCount = Object.keys(domainRoles).length + globalRoles.size;
+
+  function addDomain(domain: string) {
+    setDomainRoles((prev) => ({ ...prev, [domain]: "member" }));
+  }
+
+  function removeDomain(domain: string) {
+    setDomainRoles((prev) => {
+      const next = { ...prev };
+      delete next[domain];
+      return next;
+    });
+  }
+
+  function toggleGlobal(role: string) {
+    setGlobalRoles((prev) => {
+      const next = new Set(prev);
+      if (next.has(role)) next.delete(role);
+      else next.add(role);
+      return next;
+    });
+  }
+
+  function save() {
+    const assignments = [
+      ...Object.entries(domainRoles).map(([domain, role]) => ({
+        role,
+        domain,
+      })),
+      ...[...globalRoles].map((role) => ({ role, domain: "" })),
+    ];
+    startTransition(async () => {
+      const res = await updateMember(member.id, assignments);
+      if ("error" in res) {
+        toast.error(res.error);
+        return;
+      }
+      toast.success("Member updated.");
+      onDone();
+    });
+  }
+
+  function remove() {
+    startTransition(async () => {
+      const res = await removeMember(member.id);
+      if ("error" in res) {
+        toast.error(res.error);
+        return;
+      }
+      toast.success(`${member.firstName} ${member.lastName} removed.`);
+      onDone();
+    });
+  }
+
+  if (!editing) {
+    return (
+      <div className="mt-6 flex gap-2 border-t border-border px-4 pt-4">
+        <Button
+          variant="outline"
+          size="sm"
+          className="gap-1.5"
+          onClick={() => setEditing(true)}
+        >
+          <Pencil className="h-3.5 w-3.5" />
+          Edit roles
+        </Button>
+        <AlertDialog>
+          <AlertDialogTrigger asChild>
+            <Button variant="destructive" size="sm" className="gap-1.5">
+              <Trash2 className="h-3.5 w-3.5" />
+              Remove
+            </Button>
+          </AlertDialogTrigger>
+          <AlertDialogContent>
+            <AlertDialogHeader>
+              <AlertDialogTitle>
+                Remove {member.firstName} {member.lastName}?
+              </AlertDialogTitle>
+              <AlertDialogDescription>
+                They'll be set to rejected and drop off the directory. This can
+                be undone from member requests.
+              </AlertDialogDescription>
+            </AlertDialogHeader>
+            <AlertDialogFooter>
+              <AlertDialogCancel disabled={isPending}>Cancel</AlertDialogCancel>
+              <AlertDialogAction
+                disabled={isPending}
+                onClick={(e) => {
+                  e.preventDefault();
+                  remove();
+                }}
+              >
+                {isPending ? (
+                  <Loader2 className="h-4 w-4 animate-spin" />
+                ) : null}
+                Remove
+              </AlertDialogAction>
+            </AlertDialogFooter>
+          </AlertDialogContent>
+        </AlertDialog>
+      </div>
+    );
+  }
+
+  return (
+    <div className="mt-6 space-y-4 border-t border-border px-4 pt-4">
+      <div>
+        <p className="mb-2 text-sm font-medium">Domains & roles</p>
+        <div className="flex flex-col gap-2">
+          {Object.keys(domainRoles).length === 0 ? (
+            <p className="text-sm text-muted-foreground">No domains.</p>
+          ) : (
+            Object.entries(domainRoles).map(([domain, role]) => (
+              <div key={domain} className="flex items-center gap-2">
+                <Badge variant="secondary" className="shrink-0">
+                  {capitalize(domain)}
+                </Badge>
+                <Select
+                  value={role}
+                  onValueChange={(v) =>
+                    setDomainRoles((prev) => ({ ...prev, [domain]: v }))
+                  }
+                  disabled={isPending}
+                >
+                  <SelectTrigger size="sm" className="w-[170px]">
+                    <SelectValue />
+                  </SelectTrigger>
+                  <SelectContent>
+                    {DOMAIN_SCOPED_ROLES.map((r) => (
+                      <SelectItem key={r} value={r}>
+                        {capitalize(r)}
+                      </SelectItem>
+                    ))}
+                  </SelectContent>
+                </Select>
+                <Button
+                  variant="ghost"
+                  size="icon"
+                  className="size-8 text-muted-foreground"
+                  disabled={isPending}
+                  aria-label={`Remove ${capitalize(domain)}`}
+                  onClick={() => removeDomain(domain)}
+                >
+                  <X className="size-4" />
+                </Button>
+              </div>
+            ))
+          )}
+          {availableDomains.length > 0 ? (
+            <div className="mt-1 flex flex-wrap items-center gap-1.5">
+              <span className="text-xs text-muted-foreground">Add:</span>
+              {availableDomains.map((domain) => (
+                <Button
+                  key={domain}
+                  variant="outline"
+                  size="sm"
+                  className="h-7 gap-1 text-xs"
+                  disabled={isPending}
+                  onClick={() => addDomain(domain)}
+                >
+                  <Plus className="size-3" />
+                  {capitalize(domain)}
+                </Button>
+              ))}
+            </div>
+          ) : null}
+        </div>
+      </div>
+
+      <div>
+        <p className="mb-2 text-sm font-medium">Global roles</p>
+        <div className="flex flex-wrap gap-1.5">
+          {GLOBAL_ROLE_LIST.map((role) => {
+            const active = globalRoles.has(role);
+            return (
+              <Button
+                key={role}
+                variant={active ? "default" : "outline"}
+                size="sm"
+                className="h-7 text-xs"
+                disabled={isPending}
+                onClick={() => toggleGlobal(role)}
+              >
+                {capitalize(role)}
+              </Button>
+            );
+          })}
+        </div>
+      </div>
+
+      <div className="flex gap-2 pt-1">
+        <Button
+          size="sm"
+          disabled={isPending || assignmentCount === 0}
+          onClick={save}
+        >
+          {isPending ? <Loader2 className="h-4 w-4 animate-spin" /> : null}
+          Save
+        </Button>
+        <Button
+          variant="ghost"
+          size="sm"
+          disabled={isPending}
+          onClick={() => setEditing(false)}
+        >
+          Cancel
+        </Button>
+      </div>
+    </div>
+  );
+}
+
 export default function MemberDirectoryClient({
   members,
+  canManage,
 }: {
   members: ApprovedMember[];
+  canManage: boolean;
 }) {
   const [search, setSearch] = useState("");
   const [page, setPage] = useState(0);
@@ -484,6 +771,14 @@ export default function MemberDirectoryClient({
                   </a>
                 </div>
               </div>
+
+              {canManage && (
+                <MemberManagePanel
+                  key={selected.id}
+                  member={selected}
+                  onDone={() => setSelected(null)}
+                />
+              )}
             </>
           )}
         </SheetContent>

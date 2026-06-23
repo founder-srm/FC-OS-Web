@@ -1,10 +1,15 @@
+import { getAccessContext } from "@/lib/auth/context";
 import { getApprovedMembers } from "@/utils/dbActions";
 import MemberDirectoryClient from "./member-directory-client";
 
 export const dynamic = "force-dynamic";
 
 export default async function MemberDirectoryPage() {
-  const members = await getApprovedMembers();
+  const [members, ctx] = await Promise.all([
+    getApprovedMembers(),
+    getAccessContext(),
+  ]);
+  const canManage = ctx?.isApprover ?? false;
 
   return (
     <div className="flex flex-col gap-4">
@@ -17,7 +22,7 @@ export default async function MemberDirectoryPage() {
           </span>
         </p>
       </div>
-      <MemberDirectoryClient members={members} />
+      <MemberDirectoryClient members={members} canManage={canManage} />
     </div>
   );
 }

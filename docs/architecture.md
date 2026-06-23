@@ -32,15 +32,39 @@ enforces the state machine — `no-profile` → `/onboarding`, status ≠ `appro
 ### RBAC
 
 Role/permission model is data-driven in the schema: `roles` (enum `role_label` from
-`member` → `president`, each `domain`- or `global`-scoped), `permissions`,
-`role_permissions`, and `user_roles` (a user's role per domain — multi-domain membership
-= one row per domain). Domains: `technical`, `creatives`, `operations`, `outreach`.
+`member` → `president`, plus read-only `advisor` / `alumni`, each `domain`- or
+`global`-scoped), `permissions`, `role_permissions`, and `user_roles` (a user's role per
+domain — multi-domain membership = one row per domain). Domains: `technical`, `creatives`,
+`operations`, `outreach`.
 
-Approver gating currently keys off `isApprover` in `AccessContext` (HRM / VP / President,
-see `APPROVER_ROLES` in `context.ts`); the sidebar hides `requiresApprover` items
-accordingly. **Enforce authorization inside the Server Action** (e.g.
-`member-requests/actions.ts` checks `ctx.isApprover`) — proxy/layout gating is not
-sufficient for mutations.
+`AccessContext` (`context.ts`) derives three role flags:
+
+- **`isApprover`** — HRM / VP / President (`APPROVER_ROLES`); the sidebar hides
+  `requiresApprover` items from everyone else. Approvers also manage approved members
+  directly from the **Member Directory**: `updateMember` (edit domains/roles, reusing
+  `setMemberRoles`) and `removeMember` (soft-delete → `status = "rejected"` via
+  `setMemberDecision`) in `member-directory/actions.ts`. Guarded against self-lockout —
+  an approver cannot strip their own approver role or remove themselves. Directory
+  management is approver-only; domain leads are **not** granted it (unlike the request
+  flow's `domainLeadsCanApprove`).
+- **`isDomainLead`** — `lead` / `co-lead` (`DOMAIN_LEAD_ROLES`). When an approver enables
+  the `domainLeadsCanApprove` setting, domain leads may approve pending members **in their
+  own domain only** (`decideMember` intersects the applicant's domains with
+  `ctx.domainIds`; the Member Requests page filters its list the same way).
+- **`isReadOnly`** — `advisor` / `alumni` (`READ_ONLY_ROLES`): full view access, no
+  mutations.
+
+**Enforce authorization inside the Server Action** — proxy/layout gating is not
+sufficient for mutations. Every mutating Server Action must gate through
+`requireWriteAccess()` (rejects read-only roles), then check any capability flag it needs
+(e.g. `member-requests/actions.ts`, `member-directory/actions.ts` — both gate on
+`ctx.isApprover`). The one exception is `onboarding/actions.ts`, which runs pre-profile
+(no roles yet).
+
+App-wide settings live in the singleton `app_settings` table (one row, `id = 1`); read via
+`getAppSettings()`, written via `setDomainLeadsCanApprove()`. Approvers toggle
+`domainLeadsCanApprove` from the **profile page** settings modal
+(`dashboard/profile/settings-dialog.tsx`).
 
 ### Data layer
 
@@ -56,9 +80,12 @@ sufficient for mutations.
 ### App structure
 
 - `src/app/dashboard/layout.tsx` — the gated shell (sidebar + breadcrumb), passes
-  `isApprover` to `AppSidebar`.
+  `isApprover` and `canApproveMembers` (approver or enabled domain lead) to `AppSidebar`.
 - `src/lib/dashboard-nav.ts` — single source of truth for sidebar nav (sections, hrefs,
   `requiresApprover`, `disabled`/`Soon` flags). Add tools here.
+- `src/app/dashboard/member-directory/page.tsx` — lists approved members; passes
+  `canManage` (`ctx.isApprover`) to the client, which gates the per-member edit/remove
+  panel in the detail sheet.
 - Opus (`/dashboard/opus`) is currently a stub page; its data model is the `tasks` schema
   (status enum, domain, `assignedBy` / `assignedTo[]`, deadline). Build the Opus
   workspace against it.
