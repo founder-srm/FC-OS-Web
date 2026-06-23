@@ -86,6 +86,30 @@ App-wide settings live in the singleton `app_settings` table (one row, `id = 1`)
 - `src/app/dashboard/member-directory/page.tsx` — lists approved members; passes
   `canManage` (`ctx.isApprover`) to the client, which gates the per-member edit/remove
   panel in the detail sheet.
-- Opus (`/dashboard/opus`) is currently a stub page; its data model is the `tasks` schema
-  (status enum, domain, `assignedBy` / `assignedTo[]`, deadline). Build the Opus
-  workspace against it.
+- Opus (`/dashboard/opus`) is the per-domain kanban task manager — see `### Opus` below
+  for the data model. The page is currently a stub; build the workspace against that schema.
+
+### Opus
+
+Per-domain kanban PM tool. Schema is **fully data-driven and domain-scoped** so adding a
+domain (a row in `domains`) lights up Opus for it with zero code changes — re-run
+`bun run seed` to populate that domain's defaults. Schema lives in
+`src/database/schemas/opus_*.ts`:
+
+- **`opus_statuses`** / **`opus_priorities`** — per-domain kanban columns / priority levels.
+  Both carry `position` (ordering), `isDefault` (seeded rows, protected from deletion at the
+  app layer), and a `unique(domain, name)` constraint (enables idempotent seeding). Defaults
+  seeded per domain: statuses Backlog/Todo/In Progress/Done/Cancelled; priorities
+  Urgent/High/Medium/Low. **"No Priority" is not a row** — it's `priority_id IS NULL`.
+- **`opus_labels`** — per-domain custom labels (`name` + `color` hex). No defaults, no order.
+- **`opus_tasks`** — the task table. `parent_task_id` self-FK (cascade) models sub-tasks;
+  null = top-level. One-level nesting is enforced at the **app layer**, not the DB. Sub-task
+  due dates inherit the parent's at the app layer. `status_id`/`priority_id` are FK
+  **`restrict`** (can't delete a status/priority while tasks reference it); `priority_id`
+  nullable; `created_by` FK **`set null`**; `position` orders cards within a column.
+- **`opus_task_assignees`** / **`opus_task_labels`** — many-to-many junctions (composite PK),
+  replacing the old array column. **`opus_task_links`** — references/URLs per task.
+
+Authorization is **not** in the schema — enforce in Server Actions via the `user_roles`
+row for the task's domain (member = edit only tasks assigned to them; lead/co-lead/associate
+lead = manage their domain's tasks + statuses/priorities/labels; above-leads = full access).

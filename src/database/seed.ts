@@ -7,6 +7,8 @@ import "dotenv/config";
 import { db } from "./db";
 import { appSettings } from "./schemas/app_settings";
 import { domains } from "./schemas/domains";
+import { opusPriorities } from "./schemas/opus_priorities";
+import { opusStatuses } from "./schemas/opus_statuses";
 import { roles } from "./schemas/roles";
 
 const DOMAIN_IDS = [
@@ -31,6 +33,21 @@ const ROLES = [
   { id: "alumni", scope: "global" },
 ] as const;
 
+const DEFAULT_STATUSES = [
+  { name: "Backlog", position: 0 },
+  { name: "Todo", position: 1 },
+  { name: "In Progress", position: 2 },
+  { name: "Done", position: 3 },
+  { name: "Cancelled", position: 4 },
+] as const;
+
+const DEFAULT_PRIORITIES = [
+  { name: "Urgent", position: 0 },
+  { name: "High", position: 1 },
+  { name: "Medium", position: 2 },
+  { name: "Low", position: 3 },
+] as const;
+
 async function seed() {
   await db
     .insert(domains)
@@ -45,7 +62,33 @@ async function seed() {
   // Singleton settings row (id=1), defaults applied by the schema.
   await db.insert(appSettings).values({ id: 1 }).onConflictDoNothing();
 
-  console.log("Seeded domains + roles + settings.");
+  for (const domainId of DOMAIN_IDS) {
+    await db
+      .insert(opusStatuses)
+      .values(
+        DEFAULT_STATUSES.map((s) => ({
+          domain: domainId,
+          name: s.name,
+          position: s.position,
+          isDefault: true,
+        })),
+      )
+      .onConflictDoNothing();
+
+    await db
+      .insert(opusPriorities)
+      .values(
+        DEFAULT_PRIORITIES.map((p) => ({
+          domain: domainId,
+          name: p.name,
+          position: p.position,
+          isDefault: true,
+        })),
+      )
+      .onConflictDoNothing();
+  }
+
+  console.log("Seeded domains + roles + settings + opus statuses + priorities.");
 }
 
 seed()

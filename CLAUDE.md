@@ -22,9 +22,12 @@ bun run lint             # biome check  (lint)
 bun run format           # biome format --write
 bun run seed             # tsx src/database/seed.ts
 
-bunx drizzle-kit generate --config drizzle.config.ts   # generate migration from schema changes
-bunx drizzle-kit migrate  --config drizzle.config.ts   # apply migrations
+bunx drizzle-kit generate --config drizzle.config.ts   # generate migration SQL (for the record)
+bunx drizzle-kit push     --config drizzle.config.ts   # apply schema to DB (NOT `migrate` — see below)
 ```
+
+- DB syncs via **`push`**, not `migrate` (no `__drizzle_migrations` table). See
+  `docs/pushing-migrations.md` before touching the schema.
 
 - **Never commit** `package-lock.json`, `pnpm-lock.yaml`, or `yarn.lock` (Bun only).
 - Lint/format is **Biome**, not ESLint/Prettier.
