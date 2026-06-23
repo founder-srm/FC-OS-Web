@@ -1,6 +1,12 @@
-import { BadgeCheck, BellIcon, CheckCircle2Icon, InfoIcon, Monitor } from "lucide-react";
+import {
+  BadgeCheck,
+  BellIcon,
+  CheckCircle2Icon,
+  InfoIcon,
+  Monitor,
+} from "lucide-react";
+import { Alert, AlertDescription, AlertTitle } from "@/components/ui/alert";
 import { Badge } from "@/components/ui/badge";
-import { Alert, AlertTitle, AlertDescription } from "@/components/ui/alert";
 
 export default function DashboardPage() {
   return (

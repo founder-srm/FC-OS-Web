@@ -1,11 +1,12 @@
 "use client";
 
-import Link from "next/link";
 import { useRouter } from "next/navigation";
 import { type FormEvent, useState } from "react";
 
+import { toast } from "sonner";
+
 import { authClient } from "@/lib/auth/client";
-import { srmistEmail } from "@/lib/validation/onboarding";
+import { SRMIST_EMAIL_SUFFIX, srmistEmail } from "@/lib/validation/onboarding";
 import { Button } from "./ui/button";
 import {
   Card,
@@ -51,19 +52,23 @@ const Login = () => {
 
   const verifyCode = async (event: FormEvent) => {
     event.preventDefault();
-    setError(null);
     setLoading(true);
-    const { error: signInError } = await authClient.signIn.emailOtp({
-      email,
-      otp,
-    });
-    setLoading(false);
-    if (signInError) {
-      setError(signInError.message ?? "Invalid or expired code.");
-      return;
+    try {
+      const { error: signInError } = await authClient.signIn.emailOtp({
+        email,
+        otp,
+      });
+      if (signInError) {
+        toast.error(signInError.message ?? "Invalid or expired code.");
+        return;
+      }
+      // The dashboard layout routes by profile state (onboarding / pending / ok).
+      router.push("/dashboard");
+    } catch {
+      toast.error("Something went wrong. Please try again.");
+    } finally {
+      setLoading(false);
     }
-    // The dashboard layout routes by profile state (onboarding / pending / ok).
-    router.push("/dashboard");
   };
 
   return (
@@ -104,11 +109,9 @@ const Login = () => {
             <Button type="submit" className="w-full" disabled={loading}>
               {loading ? "Sending…" : "Send code"}
             </Button>
-            <p className="text-sm text-muted-foreground">
-              Need an account?{" "}
-              <Link href="/signup" className="underline underline-offset-4">
-                Request access
-              </Link>
+            <p className="text-center text-sm text-muted-foreground">
+              New here? Enter your {SRMIST_EMAIL_SUFFIX} email above and we'll
+              email you a code — no separate sign-up needed.
             </p>
           </CardFooter>
         </form>
@@ -127,11 +130,6 @@ const Login = () => {
                 className="font-sans"
               />
             </div>
-            {error ? (
-              <p className="mt-4 text-sm text-destructive" role="alert">
-                {error}
-              </p>
-            ) : null}
           </CardContent>
           <CardFooter className="flex-col gap-2">
             <Button type="submit" className="w-full" disabled={loading}>

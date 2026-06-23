@@ -67,12 +67,8 @@
           "name": "activity_domain_domains_domain_id_fk",
           "tableFrom": "activity",
           "tableTo": "domains",
-          "columnsFrom": [
-            "domain"
-          ],
-          "columnsTo": [
-            "domain_id"
-          ],
+          "columnsFrom": ["domain"],
+          "columnsTo": ["domain_id"],
           "onDelete": "restrict",
           "onUpdate": "no action"
         }
@@ -127,12 +123,8 @@
           "name": "attendance_profile_id_profiles_user_id_fk",
           "tableFrom": "attendance",
           "tableTo": "profiles",
-          "columnsFrom": [
-            "profile_id"
-          ],
-          "columnsTo": [
-            "user_id"
-          ],
+          "columnsFrom": ["profile_id"],
+          "columnsTo": ["user_id"],
           "onDelete": "cascade",
           "onUpdate": "no action"
         },
@@ -140,12 +132,8 @@
           "name": "attendance_meeting_id_activity_id_fk",
           "tableFrom": "attendance",
           "tableTo": "activity",
-          "columnsFrom": [
-            "meeting_id"
-          ],
-          "columnsTo": [
-            "id"
-          ],
+          "columnsFrom": ["meeting_id"],
+          "columnsTo": ["id"],
           "onDelete": "cascade",
           "onUpdate": "no action"
         }
@@ -263,12 +251,8 @@
           "name": "profiles_role_id_roles_role_id_fk",
           "tableFrom": "profiles",
           "tableTo": "roles",
-          "columnsFrom": [
-            "role_id"
-          ],
-          "columnsTo": [
-            "role_id"
-          ],
+          "columnsFrom": ["role_id"],
+          "columnsTo": ["role_id"],
           "onDelete": "restrict",
           "onUpdate": "no action"
         },
@@ -276,12 +260,8 @@
           "name": "profiles_domain_id_domains_domain_id_fk",
           "tableFrom": "profiles",
           "tableTo": "domains",
-          "columnsFrom": [
-            "domain_id"
-          ],
-          "columnsTo": [
-            "domain_id"
-          ],
+          "columnsFrom": ["domain_id"],
+          "columnsTo": ["domain_id"],
           "onDelete": "restrict",
           "onUpdate": "no action"
         }
@@ -291,16 +271,12 @@
         "profiles_email_unique": {
           "name": "profiles_email_unique",
           "nullsNotDistinct": false,
-          "columns": [
-            "email"
-          ]
+          "columns": ["email"]
         },
         "profiles_phone_unique": {
           "name": "profiles_phone_unique",
           "nullsNotDistinct": false,
-          "columns": [
-            "phone"
-          ]
+          "columns": ["phone"]
         }
       },
       "policies": {},
@@ -331,12 +307,8 @@
           "name": "role_permissions_role_id_roles_role_id_fk",
           "tableFrom": "role_permissions",
           "tableTo": "roles",
-          "columnsFrom": [
-            "role_id"
-          ],
-          "columnsTo": [
-            "role_id"
-          ],
+          "columnsFrom": ["role_id"],
+          "columnsTo": ["role_id"],
           "onDelete": "no action",
           "onUpdate": "no action"
         },
@@ -344,12 +316,8 @@
           "name": "role_permissions_permission_id_permissions_permission_id_fk",
           "tableFrom": "role_permissions",
           "tableTo": "permissions",
-          "columnsFrom": [
-            "permission_id"
-          ],
-          "columnsTo": [
-            "permission_id"
-          ],
+          "columnsFrom": ["permission_id"],
+          "columnsTo": ["permission_id"],
           "onDelete": "no action",
           "onUpdate": "no action"
         }
@@ -357,10 +325,7 @@
       "compositePrimaryKeys": {
         "role_permissions_role_id_permission_id_pk": {
           "name": "role_permissions_role_id_permission_id_pk",
-          "columns": [
-            "role_id",
-            "permission_id"
-          ]
+          "columns": ["role_id", "permission_id"]
         }
       },
       "uniqueConstraints": {},
@@ -466,12 +431,8 @@
           "name": "tasks_assigned_by_profiles_user_id_fk",
           "tableFrom": "tasks",
           "tableTo": "profiles",
-          "columnsFrom": [
-            "assigned_by"
-          ],
-          "columnsTo": [
-            "user_id"
-          ],
+          "columnsFrom": ["assigned_by"],
+          "columnsTo": ["user_id"],
           "onDelete": "set null",
           "onUpdate": "no action"
         },
@@ -479,12 +440,8 @@
           "name": "tasks_domain_domains_domain_id_fk",
           "tableFrom": "tasks",
           "tableTo": "domains",
-          "columnsFrom": [
-            "domain"
-          ],
-          "columnsTo": [
-            "domain_id"
-          ],
+          "columnsFrom": ["domain"],
+          "columnsTo": ["domain_id"],
           "onDelete": "restrict",
           "onUpdate": "no action"
         }
@@ -500,30 +457,17 @@
     "public.type": {
       "name": "type",
       "schema": "public",
-      "values": [
-        "Meeting",
-        "Event",
-        "C2C",
-        "Help Desk"
-      ]
+      "values": ["Meeting", "Event", "C2C", "Help Desk"]
     },
     "public.attendance_status": {
       "name": "attendance_status",
       "schema": "public",
-      "values": [
-        "Present",
-        "Absent"
-      ]
+      "values": ["Present", "Absent"]
     },
     "public.domain": {
       "name": "domain",
       "schema": "public",
-      "values": [
-        "technical",
-        "creatives",
-        "operations",
-        "outreach"
-      ]
+      "values": ["technical", "creatives", "operations", "outreach"]
     },
     "public.role_label": {
       "name": "role_label",
@@ -540,20 +484,12 @@
     "public.scope": {
       "name": "scope",
       "schema": "public",
-      "values": [
-        "domain",
-        "global"
-      ]
+      "values": ["domain", "global"]
     },
     "public.status": {
       "name": "status",
       "schema": "public",
-      "values": [
-        "Not Started",
-        "In Progress",
-        "Completed",
-        "On Hold"
-      ]
+      "values": ["Not Started", "In Progress", "Completed", "On Hold"]
     }
   },
   "schemas": {},

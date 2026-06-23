@@ -1,6 +1,7 @@
 import type { Metadata } from "next";
 import { Instrument_Serif, Inter } from "next/font/google";
 import "@/styles/globals.css";
+import { Toaster } from "@/components/ui/sonner";
 import { cn } from "@/lib/utils";
 
 const serif = Instrument_Serif({
@@ -25,7 +26,7 @@ export default function RootLayout({
     <html
       lang="en"
       className={cn(
-        "dark",
+        "system",
         "h-full",
         "antialiased",
         serif.variable,
@@ -33,7 +34,10 @@ export default function RootLayout({
         "font-sans",
       )}
     >
-      <body className="min-h-full flex flex-col">{children}</body>
+      <body className="min-h-full flex flex-col">
+        {children}
+        <Toaster />
+      </body>
     </html>
   );
 }

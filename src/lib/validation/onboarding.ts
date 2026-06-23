@@ -17,19 +17,6 @@ export const DOMAIN_IDS = [
   "outreach",
 ] as const;
 
-export const signupSchema = z
-  .object({
-    email: srmistEmail,
-    password: z.string().min(8, "Password must be at least 8 characters"),
-    confirmPassword: z.string(),
-  })
-  .refine((data) => data.password === data.confirmPassword, {
-    message: "Passwords do not match",
-    path: ["confirmPassword"],
-  });
-
-export type SignupInput = z.infer<typeof signupSchema>;
-
 export const onboardingSchema = z.object({
   firstName: z.string().trim().min(1, "First name is required"),
   lastName: z.string().trim().min(1, "Last name is required"),

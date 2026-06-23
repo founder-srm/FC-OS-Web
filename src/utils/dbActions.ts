@@ -102,6 +102,84 @@ export type PendingMember = Awaited<
   ReturnType<typeof getPendingMembers>
 >[number];
 
+/** Returns all approved members with their domains and roles, for the directory. */
+export const getApprovedMembers = async () => {
+  const rows = await db
+    .select({
+      id: profiles.id,
+      authUserId: profiles.authUserId,
+      firstName: profiles.firstName,
+      lastName: profiles.lastName,
+      email: profiles.email,
+      phone: profiles.phone,
+      gender: profiles.gender,
+      dateOfBirth: profiles.dateOfBirth,
+      status: profiles.status,
+      approvedBy: profiles.approvedBy,
+      decidedAt: profiles.decidedAt,
+      domain: userRoles.domain,
+      role: userRoles.role,
+    })
+    .from(profiles)
+    .leftJoin(userRoles, eq(userRoles.id, profiles.id))
+    .where(eq(profiles.status, "approved"))
+    .orderBy(profiles.firstName);
+
+  const byProfile = new Map<
+    string,
+    {
+      id: string;
+      authUserId: string | null;
+      firstName: string;
+      lastName: string;
+      email: string;
+      phone: string;
+      gender: "male" | "female" | null;
+      dateOfBirth: string | null;
+      status: "pending_approval" | "approved" | "rejected";
+      approvedBy: string | null;
+      decidedAt: Date | null;
+      domains: string[];
+      rolePairs: { role: string; domain: string | null }[];
+    }
+  >();
+
+  for (const row of rows) {
+    const existing = byProfile.get(row.id);
+    if (existing) {
+      if (row.domain && !existing.domains.includes(row.domain))
+        existing.domains.push(row.domain);
+      const alreadyHasPair = existing.rolePairs.some(
+        (p) => p.role === row.role && p.domain === row.domain,
+      );
+      if (row.role && !alreadyHasPair)
+        existing.rolePairs.push({ role: row.role, domain: row.domain });
+    } else {
+      byProfile.set(row.id, {
+        id: row.id,
+        authUserId: row.authUserId,
+        firstName: row.firstName,
+        lastName: row.lastName,
+        email: row.email,
+        phone: row.phone,
+        gender: row.gender,
+        dateOfBirth: row.dateOfBirth,
+        status: row.status,
+        approvedBy: row.approvedBy,
+        decidedAt: row.decidedAt,
+        domains: row.domain ? [row.domain] : [],
+        rolePairs: row.role ? [{ role: row.role, domain: row.domain }] : [],
+      });
+    }
+  }
+
+  return [...byProfile.values()];
+};
+
+export type ApprovedMember = Awaited<
+  ReturnType<typeof getApprovedMembers>
+>[number];
+
 /** Records an HRM/leadership approval decision + audit. */
 export const setMemberDecision = async (
   approverId: string,

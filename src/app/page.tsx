@@ -25,7 +25,7 @@ const HomePage = () => {
             Log In
           </Link>
           <Link
-            href={"/signup"}
+            href={"/login"}
             className="text-xl px-5 py-1 backdrop-blur-xs rounded-xl border border-white/10 shadow-2xl"
           >
             Request Access
