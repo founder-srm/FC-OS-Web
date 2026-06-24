@@ -12,9 +12,36 @@ const serif = Instrument_Serif({
 
 const geist = Geist({ subsets: ["latin"], variable: "--font-sans" });
 
+const siteUrl =
+  process.env.NEXT_PUBLIC_SITE_URL ??
+  process.env.BETTER_AUTH_URL ??
+  "http://localhost:3000";
+
 export const metadata: Metadata = {
+  metadataBase: new URL(siteUrl),
   title: "FC OS",
   description: "The Founders Operating System",
+  openGraph: {
+    title: "FC OS",
+    description: "The Founders Operating System",
+    url: siteUrl,
+    siteName: "FC OS",
+    images: [
+      {
+        url: "/opengraph-image.png",
+        width: 1200,
+        height: 630,
+        alt: "FC OS",
+      },
+    ],
+    type: "website",
+  },
+  twitter: {
+    card: "summary_large_image",
+    title: "FC OS",
+    description: "The Founders Operating System",
+    images: ["/opengraph-image.png"],
+  },
 };
 
 export default function RootLayout({
