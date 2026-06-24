@@ -1,9 +1,4 @@
-import {
-  BadgeCheck,
-  BellIcon,
-  CheckCircle2Icon,
-  InfoIcon,
-} from "lucide-react";
+import { BadgeCheck, BellIcon, CheckCircle2Icon, InfoIcon } from "lucide-react";
 import { redirect } from "next/navigation";
 import { Alert, AlertDescription, AlertTitle } from "@/components/ui/alert";
 import { Badge } from "@/components/ui/badge";

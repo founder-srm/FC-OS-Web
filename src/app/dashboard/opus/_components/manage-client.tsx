@@ -63,11 +63,7 @@ function OrderedMetaSection({
   items: MetaItem[];
   withColor?: boolean;
   onCreate: (name: string, color?: string) => Promise<ActionResult>;
-  onRename: (
-    id: string,
-    name: string,
-    color?: string,
-  ) => Promise<ActionResult>;
+  onRename: (id: string, name: string, color?: string) => Promise<ActionResult>;
   onDelete: (id: string) => Promise<ActionResult>;
   onReorder: (orderedIds: string[]) => Promise<ActionResult>;
 }) {
