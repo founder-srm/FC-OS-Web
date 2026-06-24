@@ -24,7 +24,13 @@ import { useEffect, useMemo, useState } from "react";
 import { toast } from "sonner";
 import { Button } from "@/components/ui/button";
 import { ScrollArea, ScrollBar } from "@/components/ui/scroll-area";
-import { type DomainId, domainIcons, formatDomain } from "@/lib/opus/format";
+import {
+  type DomainId,
+  domainIcons,
+  formatDomain,
+  isCancelledStatus,
+  statusFraction,
+} from "@/lib/opus/format";
 import {
   addSubtaskAction,
   createTaskAction,
@@ -92,6 +98,7 @@ function Column({
   name,
   color,
   fraction,
+  isCancelled,
   taskIds,
   taskMap,
   meta,
@@ -101,6 +108,7 @@ function Column({
   name: string;
   color: string;
   fraction: number;
+  isCancelled: boolean;
   taskIds: string[];
   taskMap: Map<string, BoardTask>;
   meta: DomainMeta;
@@ -110,7 +118,11 @@ function Column({
   return (
     <div className="flex w-72 shrink-0 flex-col">
       <div className="mb-2 flex items-center gap-2 px-1">
-        <StatusIcon color={color} fraction={fraction} />
+        <StatusIcon
+          color={color}
+          fraction={fraction}
+          isCancelled={isCancelled}
+        />
         <span className="text-sm font-semibold">{name}</span>
         <span className="rounded-full bg-muted px-1.5 text-xs text-muted-foreground">
           {taskIds.length}
@@ -283,13 +295,14 @@ export function KanbanBoard({
           onDragEnd={handleDragEnd}
         >
           <div className="flex gap-4 pb-3">
-            {meta.statuses.map((s, index) => (
+            {meta.statuses.map((s) => (
               <Column
                 key={s.id}
                 statusId={s.id}
                 name={s.name}
                 color={s.color}
-                fraction={(index + 1) / meta.statuses.length}
+                fraction={statusFraction(meta.statuses, s.id)}
+                isCancelled={isCancelledStatus(s.name)}
                 taskIds={columns[s.id] ?? []}
                 taskMap={taskMap}
                 meta={meta}

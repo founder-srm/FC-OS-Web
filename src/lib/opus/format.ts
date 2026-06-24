@@ -51,6 +51,24 @@ const CLOSED_STATUS = new Set(["Done", "Cancelled"]);
 
 export const isStatusClosed = (name: string) => CLOSED_STATUS.has(name);
 
+/**
+ * Cancelled is a terminal state, not a completion step: it renders as a cross
+ * instead of a progress ring, and is excluded from the ring's fraction so the
+ * step before it (e.g. "Done") reads as the final/full state.
+ */
+export const isCancelledStatus = (name: string) => name === "Cancelled";
+
+/** Ring fraction for an ordered status list, skipping the Cancelled terminal. */
+export const statusFraction = (
+  statuses: { id: string; name: string }[],
+  id: string,
+): number => {
+  const pipeline = statuses.filter((s) => !isCancelledStatus(s.name));
+  const index = pipeline.findIndex((s) => s.id === id);
+  if (index < 0) return 0;
+  return (index + 1) / pipeline.length;
+};
+
 /** A due date is "overdue" only while the task is still open. */
 export const isOverdue = (dueDate: Date | null, statusName?: string) => {
   if (!dueDate) return false;

@@ -102,7 +102,11 @@ domain (a row in `domains`) lights up Opus for it with zero code changes — re-
   seeded per domain: statuses Backlog/Todo/In Progress/Done/Cancelled; priorities
   Urgent/High/Medium/Low. **"No Priority" is not a row** — it's `priority_id IS NULL`.
   `opus_statuses` also carries `color` (hex, default `#6b7280`): rendered as a Linear-style
-  progress ring whose fill angle = `(orderedIndex + 1) / statusCount` (see `StatusIcon`).
+  progress ring whose fill angle = `(orderedIndex + 1) / nonCancelledCount` (see `StatusIcon`).
+  **"Cancelled" is terminal, not a completion step**: it renders as a cross (lucide `CircleX`)
+  and is excluded from the ring fraction, so the step before it (e.g. "Done") reads as the
+  full ring. Detection/fraction live in `format.ts` (`isCancelledStatus`, `statusFraction`) —
+  name-based, matching the existing `isStatusClosed`.
 - **`opus_labels`** — per-domain custom labels (`name` + `color` hex). No defaults, no order.
 - **`opus_tasks`** — the task table. `parent_task_id` self-FK (cascade) models sub-tasks;
   null = top-level. One-level nesting is enforced at the **app layer**, not the DB. Sub-task
@@ -142,4 +146,6 @@ lead = manage their domain's tasks + statuses/priorities/labels; above-leads = f
   `manage-client`, `status-icon` (the progress ring).
 - **Shared presentation** `src/lib/opus/format.ts` (client-safe, no DB imports):
   `domainIcons` (per-domain lucide icon, also used by `src/app/dashboard/page.tsx`),
-  `formatDomain`, `isDomainId`, priority/label/due-date helpers.
+  `formatDomain`, `isDomainId`, priority/label/due-date helpers, and the status helpers
+  `isStatusClosed` / `isCancelledStatus` / `statusFraction` (consumed by `StatusIcon`,
+  `kanban-board`, `task-detail-dialog`).

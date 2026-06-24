@@ -24,9 +24,11 @@ import { Skeleton } from "@/components/ui/skeleton";
 import {
   formatDueDate,
   initials,
+  isCancelledStatus,
   isOverdue,
   labelTextColor,
   priorityBadgeClass,
+  statusFraction,
 } from "@/lib/opus/format";
 import { cn } from "@/lib/utils";
 import type { TaskDetail, TaskFull } from "@/utils/opusDbActions";
@@ -89,11 +91,14 @@ export function TaskDetailDialog({
   }, [taskId, load]);
 
   const statusMeta = (id: string) => {
-    const idx = meta.statuses.findIndex((s) => s.id === id);
-    const s = meta.statuses[idx];
-    return s
-      ? { color: s.color, fraction: (idx + 1) / meta.statuses.length, name: s.name }
-      : null;
+    const s = meta.statuses.find((s) => s.id === id);
+    if (!s) return null;
+    return {
+      color: s.color,
+      fraction: statusFraction(meta.statuses, id),
+      name: s.name,
+      isCancelled: isCancelledStatus(s.name),
+    };
   };
   const statusName =
     meta.statuses.find((s) => s.id === detail?.statusId)?.name ?? "";
@@ -146,7 +151,11 @@ export function TaskDetailDialog({
                     {(() => {
                       const sm = statusMeta(detail.statusId);
                       return sm ? (
-                        <StatusIcon color={sm.color} fraction={sm.fraction} />
+                        <StatusIcon
+                          color={sm.color}
+                          fraction={sm.fraction}
+                          isCancelled={sm.isCancelled}
+                        />
                       ) : null;
                     })()}
                     {statusName}
@@ -292,6 +301,7 @@ export function TaskDetailDialog({
                                   color={sm.color}
                                   fraction={sm.fraction}
                                   size={12}
+                                  isCancelled={sm.isCancelled}
                                 />
                               )}
                               {sm?.name}

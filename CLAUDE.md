@@ -56,7 +56,8 @@ touching that area:
 - **`### App structure`** — gated dashboard shell, `dashboard-nav.ts`, Opus.
 - **`### Opus`** — per-domain kanban data model + the built workspace: routes under
   `src/app/dashboard/opus/`, data layer in `src/utils/opusDbActions.ts`, authz in
-  `src/lib/opus/permissions.ts`, shared presentation in `src/lib/opus/format.ts`.
+  `src/lib/opus/permissions.ts`, shared presentation in `src/lib/opus/format.ts` (incl. the
+  status progress-ring / terminal-Cancelled-cross logic rendered by `StatusIcon`).
 
 ## UI components
 

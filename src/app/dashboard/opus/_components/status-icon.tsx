@@ -1,16 +1,35 @@
 // Progress-ring status icon: a colored outline circle with a pie wedge filled to
 // `fraction` of the way around (starting at the top). Conveys a status's position in
 // the domain's ordered pipeline — e.g. 4 statuses fill 90°/180°/270°/360°.
+// Pass `isCancelled` to render lucide's CircleX instead — Cancelled is a terminal
+// state, not a completion step.
+
+import { CircleX } from "lucide-react";
 
 export function StatusIcon({
   color,
   fraction,
   size = 14,
+  isCancelled = false,
 }: {
   color: string;
   fraction: number;
   size?: number;
+  isCancelled?: boolean;
 }) {
+  if (isCancelled) {
+    return (
+      <CircleX
+        width={size}
+        height={size}
+        color={color}
+        strokeWidth={2}
+        aria-hidden="true"
+        className="shrink-0"
+      />
+    );
+  }
+
   const f = Math.max(0, Math.min(1, fraction));
   const r = size / 2;
   const ringR = r - 1; // inset so the stroke isn't clipped
