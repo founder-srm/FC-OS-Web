@@ -5,7 +5,6 @@
 // domain surfaces automatically.
 
 import { and, asc, desc, eq, inArray, sql } from "drizzle-orm";
-import type { BatchItem } from "drizzle-orm/batch";
 import { db } from "../database/db";
 import type { domainsEnum } from "../database/schemas/domains";
 import { type OpusLabel, opusLabels } from "../database/schemas/opus_labels";
@@ -331,11 +330,8 @@ export const getOpusOverview = async (
 // Writes
 // ---------------------------------------------------------------------------
 
-type PgBatchItem = BatchItem<"pg">;
-
-/** `db.batch` wants a non-empty tuple; callers guarantee a first statement. */
-const runBatch = (stmts: PgBatchItem[]) =>
-  db.batch(stmts as [PgBatchItem, ...PgBatchItem[]]);
+/** The transaction handle passed to a `db.transaction` callback. */
+type Tx = Parameters<Parameters<typeof db.transaction>[0]>[0];
 
 export type TaskWriteInput = {
   title: string;
@@ -358,40 +354,32 @@ const nextPosition = async (domain: DomainId, statusId: string) => {
   return row?.next ?? 0;
 };
 
-const childJoinRows = (
+/** Inserts a task's assignee / label / link join rows within a transaction. */
+const insertChildJoinRows = async (
+  tx: Tx,
   taskId: string,
   input: Pick<TaskWriteInput, "assigneeIds" | "labelIds" | "links">,
 ) => {
-  const stmts = [];
   if (input.assigneeIds.length > 0) {
-    stmts.push(
-      db
-        .insert(opusTaskAssignees)
-        .values(input.assigneeIds.map((userId) => ({ taskId, userId }))),
-    );
+    await tx
+      .insert(opusTaskAssignees)
+      .values(input.assigneeIds.map((userId) => ({ taskId, userId })));
   }
   if (input.labelIds.length > 0) {
-    stmts.push(
-      db
-        .insert(opusTaskLabels)
-        .values(input.labelIds.map((labelId) => ({ taskId, labelId }))),
-    );
+    await tx
+      .insert(opusTaskLabels)
+      .values(input.labelIds.map((labelId) => ({ taskId, labelId })));
   }
   if (input.links.length > 0) {
-    stmts.push(
-      db
-        .insert(opusTaskLinks)
-        .values(
-          input.links.map((l) => ({ taskId, url: l.url, label: l.label })),
-        ),
-    );
+    await tx
+      .insert(opusTaskLinks)
+      .values(input.links.map((l) => ({ taskId, url: l.url, label: l.label })));
   }
-  return stmts;
 };
 
 /**
  * Creates a task (or subtask) plus its assignee / label / link rows. Subtasks
- * inherit the parent's due date and share its domain. Atomic via `db.batch()`.
+ * inherit the parent's due date and share its domain. Atomic via a transaction.
  */
 export const createOpusTask = async (params: {
   domain: DomainId;
@@ -403,8 +391,8 @@ export const createOpusTask = async (params: {
   const taskId = crypto.randomUUID();
   const position = await nextPosition(params.domain, params.input.statusId);
 
-  await runBatch([
-    db.insert(opusTasks).values({
+  await db.transaction(async (tx) => {
+    await tx.insert(opusTasks).values({
       id: taskId,
       domain: params.domain,
       parentTaskId: params.parentTaskId,
@@ -415,9 +403,9 @@ export const createOpusTask = async (params: {
       dueDate: params.dueDate,
       position,
       createdBy: params.createdBy,
-    }),
-    ...childJoinRows(taskId, params.input),
-  ]);
+    });
+    await insertChildJoinRows(tx, taskId, params.input);
+  });
   return taskId;
 };
 
@@ -427,8 +415,8 @@ export const updateOpusTask = async (
   input: TaskWriteInput,
   dueDate: Date | null,
 ) => {
-  await runBatch([
-    db
+  await db.transaction(async (tx) => {
+    await tx
       .update(opusTasks)
       .set({
         title: input.title,
@@ -438,12 +426,14 @@ export const updateOpusTask = async (
         dueDate,
         updatedAt: new Date(),
       })
-      .where(eq(opusTasks.id, taskId)),
-    db.delete(opusTaskAssignees).where(eq(opusTaskAssignees.taskId, taskId)),
-    db.delete(opusTaskLabels).where(eq(opusTaskLabels.taskId, taskId)),
-    db.delete(opusTaskLinks).where(eq(opusTaskLinks.taskId, taskId)),
-    ...childJoinRows(taskId, input),
-  ]);
+      .where(eq(opusTasks.id, taskId));
+    await tx
+      .delete(opusTaskAssignees)
+      .where(eq(opusTaskAssignees.taskId, taskId));
+    await tx.delete(opusTaskLabels).where(eq(opusTaskLabels.taskId, taskId));
+    await tx.delete(opusTaskLinks).where(eq(opusTaskLinks.taskId, taskId));
+    await insertChildJoinRows(tx, taskId, input);
+  });
 };
 
 export const deleteOpusTask = async (taskId: string) => {
@@ -459,15 +449,18 @@ export const moveOpusTask = async (
   toStatusId: string,
   targetOrder: string[],
 ) => {
-  await runBatch([
-    db
+  await db.transaction(async (tx) => {
+    await tx
       .update(opusTasks)
       .set({ statusId: toStatusId, updatedAt: new Date() })
-      .where(eq(opusTasks.id, taskId)),
-    ...targetOrder.map((id, index) =>
-      db.update(opusTasks).set({ position: index }).where(eq(opusTasks.id, id)),
-    ),
-  ]);
+      .where(eq(opusTasks.id, taskId));
+    for (const [index, id] of targetOrder.entries()) {
+      await tx
+        .update(opusTasks)
+        .set({ position: index })
+        .where(eq(opusTasks.id, id));
+    }
+  });
 };
 
 // --- Statuses / priorities / labels (Manage) -------------------------------
@@ -505,14 +498,14 @@ export const updateOpusStatus = async (
 
 export const reorderOpusStatuses = async (orderedIds: string[]) => {
   if (orderedIds.length === 0) return;
-  await runBatch(
-    orderedIds.map((id, index) =>
-      db
+  await db.transaction(async (tx) => {
+    for (const [index, id] of orderedIds.entries()) {
+      await tx
         .update(opusStatuses)
         .set({ position: index })
-        .where(eq(opusStatuses.id, id)),
-    ),
-  );
+        .where(eq(opusStatuses.id, id));
+    }
+  });
 };
 
 export const createOpusPriority = async (domain: DomainId, name: string) => {
@@ -529,14 +522,14 @@ export const updateOpusPriority = async (id: string, name: string) => {
 
 export const reorderOpusPriorities = async (orderedIds: string[]) => {
   if (orderedIds.length === 0) return;
-  await runBatch(
-    orderedIds.map((id, index) =>
-      db
+  await db.transaction(async (tx) => {
+    for (const [index, id] of orderedIds.entries()) {
+      await tx
         .update(opusPriorities)
         .set({ position: index })
-        .where(eq(opusPriorities.id, id)),
-    ),
-  );
+        .where(eq(opusPriorities.id, id));
+    }
+  });
 };
 
 export const createOpusLabel = async (

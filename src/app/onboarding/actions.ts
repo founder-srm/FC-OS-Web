@@ -1,6 +1,7 @@
 "use server";
 
 import { eq } from "drizzle-orm";
+import { headers } from "next/headers";
 import { redirect } from "next/navigation";
 
 import { db } from "@/database/db";
@@ -14,7 +15,7 @@ export type OnboardingActionState = { error: string } | undefined;
 export async function submitOnboarding(
   input: unknown,
 ): Promise<OnboardingActionState> {
-  const { data: session } = await auth.getSession();
+  const session = await auth.api.getSession({ headers: await headers() });
   const user = session?.user;
   if (!user) return { error: "Your session expired. Please sign in again." };
 

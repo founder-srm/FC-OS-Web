@@ -1,5 +1,7 @@
+import { toNextJsHandler } from "better-auth/next-js";
 import { auth } from "@/lib/auth/server";
 
-// Proxies all browser auth calls (sign-up, OTP, session, …) to Neon Auth.
-// The folder name `[...path]` matches the handler's expected `params.path`.
-export const { GET, POST } = auth.handler();
+// Proxies all browser auth calls (OTP send/verify, session, sign-out, …) to the
+// self-hosted Better Auth instance. The handler routes off the request URL, so
+// the catch-all folder name (`[...path]`) is irrelevant.
+export const { GET, POST } = toNextJsHandler(auth);

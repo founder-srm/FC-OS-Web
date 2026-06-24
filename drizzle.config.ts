@@ -10,7 +10,7 @@ export default defineConfig({
   out: "./drizzle/migrations", // Your migrations folder
   dialect: "postgresql",
   dbCredentials: {
+    // SSL comes from the connection string (`?sslmode=`); localhost needs none.
     url: process.env.DATABASE_URL,
-    ssl: true,
   },
 });

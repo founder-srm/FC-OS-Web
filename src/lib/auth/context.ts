@@ -1,4 +1,5 @@
 import { eq } from "drizzle-orm";
+import { headers } from "next/headers";
 
 import { db } from "@/database/db";
 import { profiles } from "@/database/schemas/profiles";
@@ -24,7 +25,7 @@ export type ProfileStatus = "pending_approval" | "approved" | "rejected";
 export type AccessContext = {
   /** App-side profile id (`profiles.id`) — the stable user id used across the app. */
   userId: string;
-  /** Neon Auth user id (`neon_auth.user.id`). */
+  /** Better Auth user id (`user.id`). */
   authUserId: string;
   status: ProfileStatus;
   roleIds: string[];
@@ -43,13 +44,13 @@ export type AuthState =
   | { kind: "active"; ctx: AccessContext };
 
 /**
- * Resolves the current request's auth + onboarding/approval state from the Neon
- * Auth session plus the user's `profiles` row and `user_roles`. Callers must run
- * dynamically (`export const dynamic = "force-dynamic"`).
+ * Resolves the current request's auth + onboarding/approval state from the
+ * Better Auth session plus the user's `profiles` row and `user_roles`. Callers
+ * must run dynamically (`export const dynamic = "force-dynamic"`).
  */
 export async function getAuthState(): Promise<AuthState> {
-  const { data } = await auth.getSession();
-  const user = data?.user;
+  const session = await auth.api.getSession({ headers: await headers() });
+  const user = session?.user;
   if (!user) return { kind: "unauthenticated" };
 
   const [profile] = await db

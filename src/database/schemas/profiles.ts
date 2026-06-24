@@ -19,9 +19,9 @@ export const profileStatusEnum = pgEnum("profile_status", [
 
 export const profiles = pgTable("profiles", {
   // App-side user id. Stable primary key referenced across the app; kept even
-  // though auth identity now lives in `neon_auth.user` (see `authUserId`).
+  // though auth identity lives in Better Auth's `user` table (see `authUserId`).
   id: uuid("user_id").defaultRandom().primaryKey(),
-  // Maps this profile to its Neon Auth user (`neon_auth.user.id`). Set during
+  // Maps this profile to its Better Auth user (`user.id`). Set during
   // onboarding; null only for legacy/placeholder rows.
   authUserId: uuid("auth_user_id").unique(),
   firstName: text("first_name").notNull(),

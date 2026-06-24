@@ -22,8 +22,8 @@ export const pushProfiles = async (values: NewProfile[]) => {
  * Creates a pending member profile and their domain memberships.
  *
  * Multi-domain membership reuses `user_roles`: one `member` row per chosen
- * domain. The neon-http driver has no interactive transactions, so we generate
- * the id up front and write both statements atomically via `db.batch()`.
+ * domain. We generate the id up front and write the profile + its role rows
+ * atomically in a single transaction.
  */
 export const onboardProfile = async (
   authUserId: string,
@@ -32,8 +32,8 @@ export const onboardProfile = async (
 ) => {
   const profileId = crypto.randomUUID();
 
-  await db.batch([
-    db.insert(profiles).values({
+  await db.transaction(async (tx) => {
+    await tx.insert(profiles).values({
       id: profileId,
       authUserId,
       email,
@@ -43,15 +43,15 @@ export const onboardProfile = async (
       gender: data.gender,
       dateOfBirth: data.dateOfBirth.toISOString().slice(0, 10),
       status: "pending_approval",
-    }),
-    db.insert(userRoles).values(
+    });
+    await tx.insert(userRoles).values(
       data.domains.map((domain) => ({
         id: profileId,
         role: "member" as const,
         domain,
       })),
-    ),
-  ]);
+    );
+  });
 
   return profileId;
 };
@@ -274,8 +274,8 @@ const GLOBAL_ROLES = new Set<string>([
 
 /**
  * Replaces a profile's role assignments. Domain-scoped roles keep their domain;
- * global roles collapse to a single `domain = null` row (deduped). Atomic via
- * `db.batch()` since neon-http has no interactive transactions.
+ * global roles collapse to a single `domain = null` row (deduped). The
+ * delete + insert run atomically in a single transaction.
  */
 export const setMemberRoles = async (
   profileId: string,
@@ -303,10 +303,10 @@ export const setMemberRoles = async (
     return;
   }
 
-  await db.batch([
-    db.delete(userRoles).where(eq(userRoles.id, profileId)),
-    db.insert(userRoles).values(rows),
-  ]);
+  await db.transaction(async (tx) => {
+    await tx.delete(userRoles).where(eq(userRoles.id, profileId));
+    await tx.insert(userRoles).values(rows);
+  });
 };
 
 /** Records an HRM/leadership approval decision + audit. */
