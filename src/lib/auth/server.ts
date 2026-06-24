@@ -32,6 +32,8 @@ const mailer = createTransport({
 export const auth = betterAuth({
   secret,
   baseURL: process.env.BETTER_AUTH_URL,
+  // Apex + www both served at :3005; Better Auth otherwise trusts only baseURL.
+  trustedOrigins: ["https://fc-os.tech", "https://www.fc-os.tech"],
   database: drizzleAdapter(db, { provider: "pg", schema: authSchema }),
   // UUID ids so Better Auth's `user.id` matches the uuid `profiles.auth_user_id`.
   advanced: { database: { generateId: "uuid" } },
