@@ -43,6 +43,7 @@ export default async function RootLayout({
           collapsible={"icon"}
           isApprover={state.ctx.isApprover}
           canApproveMembers={canApproveMembers}
+          userName={`${state.ctx.firstName} ${state.ctx.lastName}`.trim()}
         />
         <SidebarInset>
           <header className="flex h-16 shrink-0 items-center gap-2">
