@@ -26,7 +26,7 @@ import {
   getDashboardNavItemByPathname,
 } from "@/lib/dashboard-nav";
 import { cn } from "@/lib/utils";
-import { Avatar, AvatarBadge, AvatarFallback, AvatarImage } from "./ui/avatar";
+import { Avatar, AvatarBadge, AvatarFallback } from "./ui/avatar";
 
 type SidebarNavItemProps = {
   item: DashboardNavItem;
@@ -76,17 +76,29 @@ function SidebarNavItem({ item, isActive }: SidebarNavItemProps) {
   );
 }
 
+function getInitials(name: string) {
+  const parts = name.trim().split(/\s+/).filter(Boolean);
+  if (parts.length === 0) return "FC";
+  const first = parts[0]?.[0] ?? "";
+  const last = parts.length > 1 ? (parts[parts.length - 1]?.[0] ?? "") : "";
+  return (first + last).toUpperCase() || "FC";
+}
+
 export function AppSidebar({
   isApprover = false,
   canApproveMembers = false,
+  userName = "",
   ...props
 }: ComponentProps<typeof Sidebar> & {
   isApprover?: boolean;
   // Enabled domain leads can also reach Member Requests.
   canApproveMembers?: boolean;
+  userName?: string;
 }) {
   const pathname = usePathname();
   const activeItem = getDashboardNavItemByPathname(pathname);
+  const displayName = userName.trim() || "Member";
+  const initials = getInitials(userName);
 
   return (
     <Sidebar variant="inset" {...props}>
@@ -161,18 +173,13 @@ export function AppSidebar({
           <SidebarMenuButton size={"lg"} asChild>
             <Link href={"/dashboard/profile"}>
               <Avatar size={"lg"}>
-                <AvatarImage
-                  src={"https://github.com/shadcn.png"}
-                  alt={"Someone's Image"}
-                  className="rounded-lg"
-                />
-                <AvatarFallback className="font-serif leading-snug">
-                  FC
+                <AvatarFallback className="rounded-lg font-serif leading-snug">
+                  {initials}
                 </AvatarFallback>
                 <AvatarBadge className="bg-primary" />
               </Avatar>
-              <h1 className="font-serif text-2xl text-sidebar-foreground">
-                Om Pratap Dhaker
+              <h1 className="truncate font-serif text-2xl text-sidebar-foreground">
+                {displayName}
               </h1>
             </Link>
           </SidebarMenuButton>

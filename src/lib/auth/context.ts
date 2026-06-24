@@ -27,6 +27,8 @@ export type AccessContext = {
   userId: string;
   /** Better Auth user id (`user.id`). */
   authUserId: string;
+  firstName: string;
+  lastName: string;
   status: ProfileStatus;
   roleIds: string[];
   /** Domains the user belongs to (empty for global-only roles). */
@@ -83,6 +85,8 @@ export async function getAuthState(): Promise<AuthState> {
     ctx: {
       userId: profile.id,
       authUserId: user.id,
+      firstName: profile.firstName,
+      lastName: profile.lastName,
       status: profile.status,
       roleIds,
       domainIds,
