@@ -39,6 +39,32 @@ login shell). Two checkouts under `~/hosting/`, both behind one Cloudflare tunne
 - **`sync-neon-to-local.sh`** — full one-way data mirror Neon → local: safety-backup,
   dump Neon (aborts if empty), atomic truncate+reload, upsert auth users from `neon_auth.user`,
   verify. Run: `ssh aio bash hosting/fc-os-web-local/scripts/sync-neon-to-local.sh`
+- **`dev.sh`** — local dev on a Mac: ensures Supabase is up, runs `bun run dev` on :3000.
+
+## Local dev (Mac)
+
+A throwaway local copy of the self-hosted stack for UI/UX work + debugging — never touches
+prod (`fc-os.tech`).
+
+- **Prereqs**: a container runtime (**OrbStack** — `brew install orbstack`, launch once to
+  finish first-run setup) and the Supabase CLI. `bun install` for deps.
+- **DB / mail / app**: local Supabase Postgres `127.0.0.1:54322`, **Mailpit** OTP inbox at
+  `http://localhost:54324` (no real sends), app at `http://localhost:3000`.
+- **`.env` (dev)**: `DATABASE_URL` → local Supabase, `BETTER_AUTH_URL=http://localhost:3000`,
+  and `SMTP_*` pointed at Mailpit (`127.0.0.1:54325`, `SMTP_SECURE=false`, empty user/pass).
+- **Mailpit toggle**: local dev needs `[inbucket] enabled = true` in `supabase/config.toml`.
+  Prod keeps it `false`, so **leave that edit uncommitted** (it shows as a local `M`).
+- **Run**: `bash scripts/dev.sh` → log in with any real member email, read the OTP at
+  `http://localhost:54324`. Stop with `supabase stop` (+ kill the dev process).
+- **Seed dev data from prod** (into empty tables; truncate first if not empty):
+  ```bash
+  { echo "SET session_replication_role=replica;"; ssh aio 'bash -s' <<'EOF'
+  pg_dump "postgres://postgres:postgres@127.0.0.1:54322/postgres" --data-only --schema=public \
+    --no-owner --no-privileges --column-inserts -T session -T account -T verification 2>/dev/null
+  EOF
+  } | docker exec -i supabase_db_fc-os-web psql -U postgres -d postgres
+  ```
+  (excludes `session/account/verification`; keeps `user` so the same logins work locally.)
 
 ## Routine procedures
 
