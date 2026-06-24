@@ -17,12 +17,16 @@ if (!secret) {
   throw new Error("BETTER_AUTH_SECRET must be set in the environment");
 }
 
-// Local OTP delivery → Supabase's inbucket SMTP catcher (no real send in dev).
-// Inbox UI at http://localhost:54324. See .self-hosting-docs/local-setup.md.
+// OTP email delivery over real SMTP (Resend by default — smtp.resend.com:465).
+// Configured via SMTP_* env vars; sender via MAIL_FROM. `auth` is only attached
+// when SMTP_USER is set, so an unauthenticated relay still works if ever needed.
 const mailer = createTransport({
-  host: process.env.SMTP_HOST ?? "127.0.0.1",
-  port: Number(process.env.SMTP_PORT ?? 54325),
-  secure: false,
+  host: process.env.SMTP_HOST,
+  port: Number(process.env.SMTP_PORT ?? 465),
+  secure: process.env.SMTP_SECURE !== "false", // 465 = implicit TLS
+  auth: process.env.SMTP_USER
+    ? { user: process.env.SMTP_USER, pass: process.env.SMTP_PASS }
+    : undefined,
 });
 
 export const auth = betterAuth({
@@ -36,7 +40,7 @@ export const auth = betterAuth({
     emailOTP({
       async sendVerificationOTP({ email, otp }) {
         await mailer.sendMail({
-          from: "FC OS <no-reply@foundersclub.local>",
+          from: process.env.MAIL_FROM ?? "FC OS <no-reply@fc-os.tech>",
           to: email,
           subject: "Your FC OS login code",
           text: `Your FC OS login code is ${otp}. It expires shortly.`,
