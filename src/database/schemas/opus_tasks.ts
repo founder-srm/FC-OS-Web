@@ -9,10 +9,9 @@ export const opusTasks = pgTable("opus_tasks", {
   domain: domainsEnum("domain")
     .references(() => domains.id, { onDelete: "cascade" })
     .notNull(),
-  parentTaskId: uuid("parent_task_id").references(
-    (): any => opusTasks.id,
-    { onDelete: "cascade" },
-  ),
+  parentTaskId: uuid("parent_task_id").references((): any => opusTasks.id, {
+    onDelete: "cascade",
+  }),
   title: text("title").notNull(),
   description: text("description"),
   statusId: uuid("status_id")

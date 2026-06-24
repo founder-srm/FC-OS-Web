@@ -1,5 +1,5 @@
 import type { Metadata } from "next";
-import { Instrument_Serif, Inter } from "next/font/google";
+import { Geist, Instrument_Serif } from "next/font/google";
 import "@/styles/globals.css";
 import { Toaster } from "@/components/ui/sonner";
 import { cn } from "@/lib/utils";
@@ -10,7 +10,7 @@ const serif = Instrument_Serif({
   weight: "400",
 });
 
-const inter = Inter({ subsets: ["latin"], variable: "--font-sans" });
+const geist = Geist({ subsets: ["latin"], variable: "--font-sans" });
 
 export const metadata: Metadata = {
   title: "FC OS",
@@ -26,11 +26,11 @@ export default function RootLayout({
     <html
       lang="en"
       className={cn(
-        "system",
+        "dark",
         "h-full",
         "antialiased",
         serif.variable,
-        inter.variable,
+        geist.variable,
         "font-sans",
       )}
     >

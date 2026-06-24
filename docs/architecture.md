@@ -87,7 +87,7 @@ App-wide settings live in the singleton `app_settings` table (one row, `id = 1`)
   `canManage` (`ctx.isApprover`) to the client, which gates the per-member edit/remove
   panel in the detail sheet.
 - Opus (`/dashboard/opus`) is the per-domain kanban task manager — see `### Opus` below
-  for the data model. The page is currently a stub; build the workspace against that schema.
+  for the data model and the workspace built on top of it.
 
 ### Opus
 
@@ -101,6 +101,8 @@ domain (a row in `domains`) lights up Opus for it with zero code changes — re-
   app layer), and a `unique(domain, name)` constraint (enables idempotent seeding). Defaults
   seeded per domain: statuses Backlog/Todo/In Progress/Done/Cancelled; priorities
   Urgent/High/Medium/Low. **"No Priority" is not a row** — it's `priority_id IS NULL`.
+  `opus_statuses` also carries `color` (hex, default `#6b7280`): rendered as a Linear-style
+  progress ring whose fill angle = `(orderedIndex + 1) / statusCount` (see `StatusIcon`).
 - **`opus_labels`** — per-domain custom labels (`name` + `color` hex). No defaults, no order.
 - **`opus_tasks`** — the task table. `parent_task_id` self-FK (cascade) models sub-tasks;
   null = top-level. One-level nesting is enforced at the **app layer**, not the DB. Sub-task
@@ -113,3 +115,31 @@ domain (a row in `domains`) lights up Opus for it with zero code changes — re-
 Authorization is **not** in the schema — enforce in Server Actions via the `user_roles`
 row for the task's domain (member = edit only tasks assigned to them; lead/co-lead/associate
 lead = manage their domain's tasks + statuses/priorities/labels; above-leads = full access).
+
+**Workspace implementation:**
+
+- Routes under `src/app/dashboard/opus/`: nested `layout.tsx` renders a secondary sidebar
+  (`_components/opus-sidebar.tsx`) — Overview · Tasks (all domains) · Manage (only
+  `manageableDomains`). `page.tsx` = Overview dashboard; `tasks/[domain]/page.tsx` = kanban
+  board; `manage/[domain]/page.tsx` = status/priority/label editor (+ `manage/page.tsx`
+  redirects to the first manageable domain). All `force-dynamic`. `[domain]` params are a
+  `Promise` (Next 16) — `await params`.
+- **Data layer** lives in `src/utils/opusDbActions.ts` (not the members' `dbActions.ts`),
+  same trust-boundary convention. Key reads: `getOpusBoard`, `getOpusTaskDetail`,
+  `getOpusDomainMeta`, `getDomainMembers`, `getOpusOverview`. Writes: `createOpusTask`,
+  `updateOpusTask`, `moveOpusTask` (DnD persist), `deleteOpusTask`, and CRUD/reorder for
+  statuses/priorities/labels — multi-statement writes go through a `runBatch` (`db.batch`)
+  helper.
+- **Server Actions** `src/app/dashboard/opus/actions.ts`: every mutation runs
+  `requireWriteAccess()` then the Opus authz helpers in `src/lib/opus/permissions.ts`
+  (`canManageDomain`, `canEditTask`, `manageableDomains` — these compute the manager set
+  `lead`/`co-lead`/`associate lead` from `ctx.roleIds`, since `ctx.isDomainLead` excludes
+  associate leads). Input validated with Zod incl. referential integrity (status/priority/
+  label/assignee must belong to the task's domain). Due date is server-enforced future-only.
+- **Client UI** (`_components/`, shadcn + `@dnd-kit`): `kanban-board` (DnD columns, optimistic
+  move), `task-card`, `task-detail-dialog`, `task-fields-dialog` (create/edit + nested
+  subtasks), `assignee-picker`/`label-picker` (Command combobox), `due-date-picker`,
+  `manage-client`, `status-icon` (the progress ring).
+- **Shared presentation** `src/lib/opus/format.ts` (client-safe, no DB imports):
+  `domainIcons` (per-domain lucide icon, also used by `src/app/dashboard/page.tsx`),
+  `formatDomain`, `isDomainId`, priority/label/due-date helpers.

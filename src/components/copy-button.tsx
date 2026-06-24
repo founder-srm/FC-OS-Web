@@ -1,9 +1,9 @@
 "use client";
 
 import { Check, Copy, Loader } from "lucide-react";
-import { Button } from "./ui/button";
 import { useState } from "react";
 import { toast } from "sonner";
+import { Button } from "./ui/button";
 
 type CopyButtonProps = {
   variant?:
@@ -52,12 +52,12 @@ const CopyButton = ({
       size={text ? size : size === "default" ? "icon" : `icon-${size}`}
       onClick={() => handleCopy(value)}
     >
-      { copyState === "idle" && <Copy /> }
-      { copyState === "loading" && <Loader className="animate-spin" /> }
-      { copyState === "success" && <Check /> }
-      { text && copyState === "idle" && "Copy" }
-      { text && copyState === "loading" && null }
-      { text && copyState === "success" && "Copied!" }
+      {copyState === "idle" && <Copy />}
+      {copyState === "loading" && <Loader className="animate-spin" />}
+      {copyState === "success" && <Check />}
+      {text && copyState === "idle" && "Copy"}
+      {text && copyState === "loading" && null}
+      {text && copyState === "success" && "Copied!"}
     </Button>
   );
 };

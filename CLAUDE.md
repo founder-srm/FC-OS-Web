@@ -54,6 +54,9 @@ touching that area:
 - **`### Data layer`** — schema-per-file convention, `dbActions.ts` trust boundary,
   `db.batch()` (no interactive transactions on neon-http).
 - **`### App structure`** — gated dashboard shell, `dashboard-nav.ts`, Opus.
+- **`### Opus`** — per-domain kanban data model + the built workspace: routes under
+  `src/app/dashboard/opus/`, data layer in `src/utils/opusDbActions.ts`, authz in
+  `src/lib/opus/permissions.ts`, shared presentation in `src/lib/opus/format.ts`.
 
 ## UI components
 

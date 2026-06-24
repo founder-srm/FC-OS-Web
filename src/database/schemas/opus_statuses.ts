@@ -5,6 +5,7 @@ import {
   text,
   unique,
   uuid,
+  varchar,
 } from "drizzle-orm/pg-core";
 import { domains, domainsEnum } from "./domains";
 
@@ -17,6 +18,7 @@ export const opusStatuses = pgTable(
       .notNull(),
     name: text("name").notNull(),
     position: integer("position").notNull(),
+    color: varchar("color", { length: 7 }).notNull().default("#6b7280"),
     isDefault: boolean("is_default").notNull().default(false),
   },
   (table) => [

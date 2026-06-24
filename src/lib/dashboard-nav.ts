@@ -56,12 +56,22 @@ export const dashboardSidebarConfig = {
       label: "Tools",
       items: [
         {
+          id: "opus",
+          label: "Opus",
+          icon: Target,
+          href: "/dashboard/opus",
+          description: "Planning and execution workspace",
+          // badge: "Exec",
+          // disabled: true,
+        },
+        {
           id: "mom",
           label: "MoM",
           icon: AudioLines,
           href: "/dashboard/MoM",
           description: "Meeting notes and follow-ups",
-          // badge: "Notes",
+          badge: "Coming Soon",
+          disabled: true,
         },
         {
           id: "attendance-tracker",
@@ -69,7 +79,8 @@ export const dashboardSidebarConfig = {
           icon: PersonStanding,
           href: "/dashboard/attendance-tracker",
           description: "Attendance and participation tracking",
-          // badge: "Live",
+          badge: "Coming Soon",
+          disabled: true,
         },
         {
           id: "fc-tv-cms",
@@ -77,7 +88,7 @@ export const dashboardSidebarConfig = {
           icon: MonitorUp,
           href: "/dashboard/FC-TV-CMS",
           description: "Content publishing and media control",
-          badge: "Soon",
+          badge: "Coming Soon",
           disabled: true,
         },
         {
@@ -86,17 +97,8 @@ export const dashboardSidebarConfig = {
           icon: Users,
           href: "/dashboard/performance-tracker",
           description: "Team performance overview",
-          // badge: "Ops",
-          // disabled: true,
-        },
-        {
-          id: "opus",
-          label: "Opus",
-          icon: Target,
-          href: "/dashboard/opus",
-          description: "Planning and execution workspace",
-          // badge: "Exec",
-          // disabled: true,
+          badge: "Coming Soon",
+          disabled: true,
         },
         {
           id: "member-directory",

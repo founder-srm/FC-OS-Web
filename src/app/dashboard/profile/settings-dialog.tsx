@@ -40,8 +40,9 @@ export default function SettingsDialog({
   return (
     <Dialog>
       <DialogTrigger asChild>
-        <Button variant="outline" size="icon" aria-label="Settings">
+        <Button variant="outline" size={"default"} aria-label="Settings">
           <Settings />
+          <span className="hidden sm:inline">Settings</span>
         </Button>
       </DialogTrigger>
       <DialogContent>
