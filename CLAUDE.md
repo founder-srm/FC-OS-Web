@@ -37,6 +37,9 @@ bunx drizzle-kit push     --config drizzle.config.ts   # apply schema to DB (NOT
 - **Database / migrations workflow**: `docs/how-to-database.md`, `docs/pushing-migrations.md`
 - **Next.js 16 specifics**: `AGENTS.md` + `node_modules/next/dist/docs/` — this is a
   newer Next than your training data (e.g. `middleware.ts` is now `proxy.ts`).
+- **Self-hosting (this branch)**: `docs/production-runbook.md` — live deploy topology, ops
+  scripts (`scripts/redeploy.sh`, `scripts/sync-neon-to-local.sh`), procedures, gotchas.
+  Bring-up: `docs/deploying-self-hosted.md`. Failback design: `docs/future-architecture.md`.
 
 ## Architecture
 
