@@ -51,7 +51,7 @@ export default async function OpusOverviewPage() {
                 ? overview.overdue
                 : overview.dueSoon;
           return (
-            <Card key={key}>
+            <div key={key}>
               <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
                 <CardDescription>{label}</CardDescription>
                 <Icon
@@ -65,7 +65,7 @@ export default async function OpusOverviewPage() {
               <CardContent>
                 <p className="font-serif text-4xl">{value}</p>
               </CardContent>
-            </Card>
+            </div>
           );
         })}
       </div>
