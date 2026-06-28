@@ -122,9 +122,12 @@ lead = manage their domain's tasks + statuses/priorities/labels; above-leads = f
 
 **Workspace implementation:**
 
-- Routes under `src/app/dashboard/opus/`: nested `layout.tsx` renders a secondary sidebar
-  (`_components/opus-sidebar.tsx`) — Overview · Tasks (all domains) · Manage (only
-  `manageableDomains`). `page.tsx` = Overview dashboard; `tasks/[domain]/page.tsx` = kanban
+- Routes under `src/app/dashboard/opus/`: nested `layout.tsx` only guards access (no
+  secondary sidebar). Opus navigation — Overview · Tasks (all domains) · Manage (only
+  `manageableDomains`) — is a collapsible dropdown under "Opus" in the main `AppSidebar`,
+  built server-side by `buildOpusNavChildren` (`src/lib/opus/nav.ts`) and injected via the
+  generic `navChildren` seam on `AppSidebar`. `page.tsx` = Overview dashboard;
+  `tasks/[domain]/page.tsx` = kanban
   board; `manage/[domain]/page.tsx` = status/priority/label editor (+ `manage/page.tsx`
   redirects to the first manageable domain). All `force-dynamic`. `[domain]` params are a
   `Promise` (Next 16) — `await params`.

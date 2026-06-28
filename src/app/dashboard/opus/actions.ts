@@ -22,10 +22,16 @@ import {
   getOpusTaskDetail,
   getParentDueDate,
   getTaskAuthInfo,
+  labelDomain,
   moveOpusTask,
+  priorityDomain,
+  priorityDomainsByIds,
   reorderOpusPriorities,
   reorderOpusStatuses,
+  statusDomain,
+  statusDomainsByIds,
   type TaskWriteInput,
+  taskDomainsByIds,
   updateOpusLabel,
   updateOpusPriority,
   updateOpusStatus,
@@ -260,6 +266,15 @@ export async function moveTaskAction(
     return { error: "Unknown status for this domain." };
   }
 
+  // Every id whose position we rewrite must be a top-level task in this domain.
+  const ordered = await taskDomainsByIds(parsed.data.targetOrder);
+  if (
+    ordered.length !== parsed.data.targetOrder.length ||
+    ordered.some((t) => t.domain !== info.domain || t.parentTaskId !== null)
+  ) {
+    return { error: "Invalid move." };
+  }
+
   await moveOpusTask(taskId, parsed.data.toStatusId, parsed.data.targetOrder);
   revalidateBoard(info.domain);
   return { ok: true };
@@ -331,6 +346,9 @@ export async function updateStatusAction(
   if (!n.success) return { error: n.error.issues[0].message };
   const c = colorSchema.safeParse(color);
   if (!c.success) return { error: c.error.issues[0].message };
+  if ((await statusDomain(id)) !== domain) {
+    return { error: "Unknown status for this domain." };
+  }
   await updateOpusStatus(id, n.data, c.data);
   revalidateManage(domain);
   return { ok: true };
@@ -342,6 +360,9 @@ export async function deleteStatusAction(
 ): Promise<ActionResult> {
   const ctx = await requireManager(domain);
   if ("error" in ctx) return ctx;
+  if ((await statusDomain(id)) !== domain) {
+    return { error: "Unknown status for this domain." };
+  }
   if ((await countTasksWithStatus(id)) > 0) {
     return { error: "Move or delete its tasks before removing this status." };
   }
@@ -356,6 +377,13 @@ export async function reorderStatusesAction(
 ): Promise<ActionResult> {
   const ctx = await requireManager(domain);
   if ("error" in ctx) return ctx;
+  const domains = await statusDomainsByIds(orderedIds);
+  if (
+    domains.length !== orderedIds.length ||
+    domains.some((d) => d !== domain)
+  ) {
+    return { error: "Unknown status for this domain." };
+  }
   await reorderOpusStatuses(orderedIds);
   revalidateManage(domain);
   return { ok: true };
@@ -383,6 +411,9 @@ export async function renamePriorityAction(
   if ("error" in ctx) return ctx;
   const parsed = nameSchema.safeParse(name);
   if (!parsed.success) return { error: parsed.error.issues[0].message };
+  if ((await priorityDomain(id)) !== domain) {
+    return { error: "Unknown priority for this domain." };
+  }
   await updateOpusPriority(id, parsed.data);
   revalidateManage(domain);
   return { ok: true };
@@ -394,6 +425,9 @@ export async function deletePriorityAction(
 ): Promise<ActionResult> {
   const ctx = await requireManager(domain);
   if ("error" in ctx) return ctx;
+  if ((await priorityDomain(id)) !== domain) {
+    return { error: "Unknown priority for this domain." };
+  }
   if ((await countTasksWithPriority(id)) > 0) {
     return { error: "This priority is in use by some tasks." };
   }
@@ -408,6 +442,13 @@ export async function reorderPrioritiesAction(
 ): Promise<ActionResult> {
   const ctx = await requireManager(domain);
   if ("error" in ctx) return ctx;
+  const domains = await priorityDomainsByIds(orderedIds);
+  if (
+    domains.length !== orderedIds.length ||
+    domains.some((d) => d !== domain)
+  ) {
+    return { error: "Unknown priority for this domain." };
+  }
   await reorderOpusPriorities(orderedIds);
   revalidateManage(domain);
   return { ok: true };
@@ -441,6 +482,9 @@ export async function updateLabelAction(
   if (!n.success) return { error: n.error.issues[0].message };
   const c = colorSchema.safeParse(color);
   if (!c.success) return { error: c.error.issues[0].message };
+  if ((await labelDomain(id)) !== domain) {
+    return { error: "Unknown label for this domain." };
+  }
   await updateOpusLabel(id, n.data, c.data);
   revalidateManage(domain);
   return { ok: true };
@@ -452,6 +496,9 @@ export async function deleteLabelAction(
 ): Promise<ActionResult> {
   const ctx = await requireManager(domain);
   if ("error" in ctx) return ctx;
+  if ((await labelDomain(id)) !== domain) {
+    return { error: "Unknown label for this domain." };
+  }
   await deleteOpusLabel(id);
   revalidateManage(domain);
   return { ok: true };

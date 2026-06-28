@@ -21,6 +21,10 @@ export type DashboardNavItem = {
   disabled?: boolean;
   // When true, only HRM / leadership (approvers) see this item.
   requiresApprover?: boolean;
+  // Nested sub-navigation, rendered as a collapsible (toggle-only) group.
+  children?: DashboardNavItem[];
+  // When the item has children, controls whether the group starts expanded.
+  defaultOpen?: boolean;
 };
 
 export type DashboardNavSection = {
@@ -135,11 +139,17 @@ export const dashboardSidebarConfig = {
   ],
 } satisfies DashboardSidebarConfig;
 
+// Flatten a nav item and all of its descendants (depth-first).
+const flattenNavItem = (item: DashboardNavItem): DashboardNavItem[] => [
+  item,
+  ...(item.children?.flatMap(flattenNavItem) ?? []),
+];
+
 export const allDashboardNavItems: DashboardNavItem[] = [
-  ...dashboardSidebarConfig.sections.flatMap<DashboardNavItem>(
-    (section) => section.items,
+  ...dashboardSidebarConfig.sections.flatMap<DashboardNavItem>((section) =>
+    section.items.flatMap(flattenNavItem),
   ),
-  ...dashboardSidebarConfig.footerItems,
+  ...dashboardSidebarConfig.footerItems.flatMap(flattenNavItem),
 ];
 
 const defaultDashboardNavItem = allDashboardNavItems[0];

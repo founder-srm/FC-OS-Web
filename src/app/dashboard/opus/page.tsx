@@ -17,14 +17,15 @@ import {
   formatDueDate,
   isOverdue,
 } from "@/lib/opus/format";
+import { cn } from "@/lib/utils";
 import { getOpusOverview } from "@/utils/opusDbActions";
 
 export const dynamic = "force-dynamic";
 
 const STAT_CARDS = [
   { key: "total", label: "Assigned to me", icon: ListTodo },
-  { key: "overdue", label: "Overdue", icon: CircleAlert },
   { key: "dueSoon", label: "Due this week", icon: CalendarClock },
+  { key: "overdue", label: "Overdue", icon: CircleAlert },
 ] as const;
 
 export default async function OpusOverviewPage() {
@@ -34,38 +35,56 @@ export default async function OpusOverviewPage() {
   const overview = await getOpusOverview(ctx.userId);
 
   return (
-    <div className="flex flex-col gap-6">
-      <div>
-        <h1 className="font-serif text-3xl text-primary">Overview</h1>
-        <p className="text-sm text-muted-foreground">
-          Your work across every domain in Opus.
-        </p>
-      </div>
+    <div className="mt-6 flex flex-col gap-6">
+      <h1 className="font-serif text-7xl text-primary">Overview</h1>
 
-      <div className="grid gap-4 sm:grid-cols-3">
+      <div className="grid gap-6 sm:grid-cols-3">
         {STAT_CARDS.map(({ key, label, icon: Icon }) => {
           const value =
             key === "total"
-              ? overview.total
+              ? overview.openTotal
               : key === "overdue"
                 ? overview.overdue
                 : overview.dueSoon;
           return (
-            <div key={key}>
-              <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-                <CardDescription>{label}</CardDescription>
-                <Icon
-                  className={
-                    key === "overdue"
-                      ? "size-4 text-destructive"
-                      : "size-4 text-muted-foreground"
-                  }
-                />
-              </CardHeader>
-              <CardContent>
-                <p className="font-serif text-4xl">{value}</p>
-              </CardContent>
+            <div
+              className={cn(
+                "bg-card rounded-xl p-6 space-y-6 shadow-md",
+                key === "overdue" &&
+                  value > 0 &&
+                  "bg-destructive text-primary-foreground",
+              )}
+              key={key}
+            >
+              <div
+                className={cn(
+                  "flex justify-between items-center text-muted-foreground text-base font-medium",
+                  key === "overdue" && value > 0 && "text-primary-foreground",
+                )}
+              >
+                <p>{label}</p>
+                <Icon className={cn("size-4")} strokeWidth={2.5} />
+              </div>
+              <div className="text-5xl font-bold font-serif">
+                <p>{value}</p>
+              </div>
             </div>
+
+            // <Card key={key}>
+            //   <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
+            //     <CardDescription>{label}</CardDescription>
+            //     <Icon
+            //       className={
+            //         key === "overdue"
+            //           ? "size-4 text-destructive"
+            //           : "size-4 text-muted-foreground"
+            //       }
+            //     />
+            //   </CardHeader>
+            //   <CardContent>
+            //     <p className="font-serif text-4xl">{value}</p>
+            //   </CardContent>
+            // </Card>
           );
         })}
       </div>
@@ -146,7 +165,7 @@ export default async function OpusOverviewPage() {
               return (
                 <Link
                   key={t.id}
-                  href={`/dashboard/opus/tasks/${t.domain}`}
+                  href={`/dashboard/opus/tasks/${t.domain}?task=${t.parentTaskId ?? t.id}`}
                   className="flex items-center justify-between gap-3 py-3 first:pt-0 last:pb-0 hover:opacity-80"
                 >
                   <div className="min-w-0">

@@ -64,6 +64,7 @@ export const statusFraction = (
   id: string,
 ): number => {
   const pipeline = statuses.filter((s) => !isCancelledStatus(s.name));
+  if (pipeline.length === 0) return 0;
   const index = pipeline.findIndex((s) => s.id === id);
   if (index < 0) return 0;
   return (index + 1) / pipeline.length;

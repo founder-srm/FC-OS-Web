@@ -9,11 +9,14 @@ export const dynamic = "force-dynamic";
 
 export default async function TasksPage({
   params,
+  searchParams,
 }: {
   params: Promise<{ domain: string }>;
+  searchParams: Promise<{ task?: string }>;
 }) {
   const { domain } = await params;
   if (!isDomainId(domain)) notFound();
+  const { task: initialTaskId } = await searchParams;
 
   const ctx = await getAccessContext();
   if (!ctx) redirect("/login");
@@ -35,6 +38,7 @@ export default async function TasksPage({
       tasks={board.tasks}
       canManage={canManageDomain(ctx, domain)}
       currentUserId={ctx.userId}
+      initialTaskId={initialTaskId}
     />
   );
 }

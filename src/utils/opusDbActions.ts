@@ -258,6 +258,7 @@ export const getDomainMembers = async (
 
 export type OpusOverview = {
   total: number;
+  openTotal: number;
   byStatus: { name: string; count: number }[];
   byDomain: { domain: string; count: number }[];
   overdue: number;
@@ -267,6 +268,7 @@ export type OpusOverview = {
     title: string;
     domain: string;
     statusName: string;
+    parentTaskId: string | null;
     dueDate: Date | null;
   }[];
 };
@@ -282,6 +284,7 @@ export const getOpusOverview = async (
       id: opusTasks.id,
       title: opusTasks.title,
       domain: opusTasks.domain,
+      parentTaskId: opusTasks.parentTaskId,
       dueDate: opusTasks.dueDate,
       updatedAt: opusTasks.updatedAt,
       statusName: opusStatuses.name,
@@ -298,11 +301,13 @@ export const getOpusOverview = async (
   const byDomain = new Map<string, number>();
   let overdue = 0;
   let dueSoon = 0;
+  let openTotal = 0;
 
   for (const r of rows) {
     byStatus.set(r.statusName, (byStatus.get(r.statusName) ?? 0) + 1);
     byDomain.set(r.domain, (byDomain.get(r.domain) ?? 0) + 1);
     const open = !DONE_STATUS_NAMES.has(r.statusName);
+    if (open) openTotal += 1;
     if (r.dueDate && open) {
       const due = r.dueDate.getTime();
       if (due < now) overdue += 1;
@@ -312,6 +317,7 @@ export const getOpusOverview = async (
 
   return {
     total: rows.length,
+    openTotal,
     byStatus: [...byStatus].map(([name, count]) => ({ name, count })),
     byDomain: [...byDomain].map(([domain, count]) => ({ domain, count })),
     overdue,
@@ -321,6 +327,7 @@ export const getOpusOverview = async (
       title: r.title,
       domain: r.domain,
       statusName: r.statusName,
+      parentTaskId: r.parentTaskId,
       dueDate: r.dueDate,
     })),
   };
@@ -604,6 +611,80 @@ export const isTopLevelTask = async (taskId: string) => {
     .where(eq(opusTasks.id, taskId))
     .limit(1);
   return row ? row.parentTaskId === null : false;
+};
+
+/**
+ * Domain + parent of each given task id. Used to validate that a client-supplied
+ * set of task ids (e.g. a drag reorder's `targetOrder`) all belong to the domain
+ * being mutated, before rewriting their positions.
+ */
+export const taskDomainsByIds = async (ids: string[]) => {
+  if (ids.length === 0)
+    return [] as {
+      id: string;
+      domain: DomainId;
+      parentTaskId: string | null;
+    }[];
+  const rows = await db
+    .select({
+      id: opusTasks.id,
+      domain: opusTasks.domain,
+      parentTaskId: opusTasks.parentTaskId,
+    })
+    .from(opusTasks)
+    .where(inArray(opusTasks.id, ids));
+  return rows.map((r) => ({
+    id: r.id,
+    domain: r.domain as DomainId,
+    parentTaskId: r.parentTaskId,
+  }));
+};
+
+/** Owning domain of a status / priority / label — for cross-domain authz checks. */
+export const statusDomain = async (id: string) => {
+  const [row] = await db
+    .select({ domain: opusStatuses.domain })
+    .from(opusStatuses)
+    .where(eq(opusStatuses.id, id))
+    .limit(1);
+  return (row?.domain as DomainId | undefined) ?? null;
+};
+
+export const priorityDomain = async (id: string) => {
+  const [row] = await db
+    .select({ domain: opusPriorities.domain })
+    .from(opusPriorities)
+    .where(eq(opusPriorities.id, id))
+    .limit(1);
+  return (row?.domain as DomainId | undefined) ?? null;
+};
+
+export const labelDomain = async (id: string) => {
+  const [row] = await db
+    .select({ domain: opusLabels.domain })
+    .from(opusLabels)
+    .where(eq(opusLabels.id, id))
+    .limit(1);
+  return (row?.domain as DomainId | undefined) ?? null;
+};
+
+/** Owning domains of a set of status / priority ids — for reorder authz checks. */
+export const statusDomainsByIds = async (ids: string[]) => {
+  if (ids.length === 0) return [] as DomainId[];
+  const rows = await db
+    .select({ domain: opusStatuses.domain })
+    .from(opusStatuses)
+    .where(inArray(opusStatuses.id, ids));
+  return rows.map((r) => r.domain as DomainId);
+};
+
+export const priorityDomainsByIds = async (ids: string[]) => {
+  if (ids.length === 0) return [] as DomainId[];
+  const rows = await db
+    .select({ domain: opusPriorities.domain })
+    .from(opusPriorities)
+    .where(inArray(opusPriorities.id, ids));
+  return rows.map((r) => r.domain as DomainId);
 };
 
 /** Parent task's due date — subtasks inherit it. */

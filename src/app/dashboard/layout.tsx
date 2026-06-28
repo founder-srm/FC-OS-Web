@@ -10,6 +10,7 @@ import {
 } from "@/components/ui/sidebar";
 import { TooltipProvider } from "@/components/ui/tooltip";
 import { getAuthState } from "@/lib/auth/context";
+import { manageableDomains } from "@/lib/opus/permissions";
 import { getAppSettings } from "@/utils/dbActions";
 
 export const metadata: Metadata = {
@@ -36,6 +37,11 @@ export default async function RootLayout({
   const canApproveMembers =
     state.ctx.isApprover || (state.ctx.isDomainLead && domainLeadsCanApprove);
 
+  // Only plain serializable data may cross the RSC boundary into the client
+  // sidebar — never built nav nodes (Lucide icons are functions). The sidebar
+  // assembles the dynamic sub-nav from these ids client-side.
+  const navData = { manageableDomains: manageableDomains(state.ctx) };
+
   return (
     <TooltipProvider>
       <SidebarProvider>
@@ -44,6 +50,7 @@ export default async function RootLayout({
           isApprover={state.ctx.isApprover}
           canApproveMembers={canApproveMembers}
           userName={`${state.ctx.firstName} ${state.ctx.lastName}`.trim()}
+          navData={navData}
         />
         <SidebarInset>
           <header className="flex h-16 shrink-0 items-center gap-2">

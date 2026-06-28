@@ -165,12 +165,14 @@ export function KanbanBoard({
   tasks,
   canManage,
   currentUserId,
+  initialTaskId,
 }: {
   domain: string;
   meta: DomainMeta;
   tasks: BoardTask[];
   canManage: boolean;
   currentUserId: string;
+  initialTaskId?: string;
 }) {
   const router = useRouter();
   const statusIds = useMemo(
@@ -189,7 +191,9 @@ export function KanbanBoard({
     () => new Map(tasks.map((t) => [t.id, t])),
   );
   const [activeId, setActiveId] = useState<string | null>(null);
-  const [openTaskId, setOpenTaskId] = useState<string | null>(null);
+  const [openTaskId, setOpenTaskId] = useState<string | null>(
+    initialTaskId ?? null,
+  );
   const [createOpen, setCreateOpen] = useState(false);
 
   // Re-sync from the server whenever the board data changes.

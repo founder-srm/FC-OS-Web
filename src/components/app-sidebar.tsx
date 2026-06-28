@@ -1,10 +1,16 @@
 "use client";
 
+import { ChevronRight } from "lucide-react";
 import Image from "next/image";
 import Link from "next/link";
 import { usePathname } from "next/navigation";
 import type { ComponentProps } from "react";
 
+import {
+  Collapsible,
+  CollapsibleContent,
+  CollapsibleTrigger,
+} from "@/components/ui/collapsible";
 import {
   Sidebar,
   SidebarContent,
@@ -17,62 +23,163 @@ import {
   SidebarMenuBadge,
   SidebarMenuButton,
   SidebarMenuItem,
+  SidebarMenuSub,
+  SidebarMenuSubButton,
+  SidebarMenuSubItem,
   SidebarRail,
   SidebarSeparator,
 } from "@/components/ui/sidebar";
 import {
   type DashboardNavItem,
   dashboardSidebarConfig,
-  getDashboardNavItemByPathname,
 } from "@/lib/dashboard-nav";
+import type { DomainId } from "@/lib/opus/format";
+import { buildOpusNavChildren } from "@/lib/opus/nav";
 import { cn } from "@/lib/utils";
 import { Avatar, AvatarBadge, AvatarFallback } from "./ui/avatar";
 
-type SidebarNavItemProps = {
-  item: DashboardNavItem;
-  isActive: boolean;
-};
+// True when the current route matches the item or any of its descendants —
+// used to decide whether a collapsible group starts expanded.
+function isBranchActive(item: DashboardNavItem, pathname: string): boolean {
+  if (pathname === item.href) return true;
+  if (item.children?.some((child) => isBranchActive(child, pathname)))
+    return true;
+  return pathname.startsWith(`${item.href}/`);
+}
 
-function SidebarNavItem({ item, isActive }: SidebarNavItemProps) {
-  const buttonClassName = cn("h-10 px-2.5", item.badge && "pr-20");
+function disabledLinkProps(item: DashboardNavItem) {
+  return {
+    "aria-disabled": item.disabled || undefined,
+    prefetch: item.disabled ? false : undefined,
+    tabIndex: item.disabled ? -1 : undefined,
+    onClick: item.disabled
+      ? (event: React.MouseEvent) => event.preventDefault()
+      : undefined,
+  };
+}
+
+// Nested (depth >= 1) nav node, rendered with the sub-menu primitives.
+function SidebarNavSubItem({
+  item,
+  pathname,
+}: {
+  item: DashboardNavItem;
+  pathname: string;
+}) {
+  if (!item.children?.length) {
+    return (
+      <SidebarMenuSubItem>
+        <SidebarMenuSubButton asChild isActive={pathname === item.href}>
+          <Link href={item.href} {...disabledLinkProps(item)}>
+            <item.icon />
+            <span>{item.label}</span>
+          </Link>
+        </SidebarMenuSubButton>
+      </SidebarMenuSubItem>
+    );
+  }
 
   return (
-    <SidebarMenuItem>
-      <SidebarMenuButton
-        asChild
-        tooltip={item.label}
-        isActive={isActive}
-        className={buttonClassName}
-      >
-        <Link
-          href={item.href}
-          aria-disabled={item.disabled || undefined}
-          prefetch={item.disabled ? false : undefined}
-          tabIndex={item.disabled ? -1 : undefined}
-          onClick={
-            item.disabled
-              ? (event) => {
-                  event.preventDefault();
-                }
-              : undefined
-          }
+    <Collapsible
+      asChild
+      className="group/collapsible"
+      defaultOpen={item.defaultOpen || isBranchActive(item, pathname)}
+    >
+      <SidebarMenuSubItem>
+        <CollapsibleTrigger asChild>
+          <SidebarMenuSubButton className="cursor-pointer">
+            <item.icon />
+            <span>{item.label}</span>
+            <ChevronRight className="ml-auto size-4 shrink-0 text-muted-foreground transition-transform group-data-[state=open]/collapsible:rotate-90" />
+          </SidebarMenuSubButton>
+        </CollapsibleTrigger>
+        <CollapsibleContent>
+          <SidebarMenuSub>
+            {item.children.map((child) => (
+              <SidebarNavSubItem
+                key={child.id}
+                item={child}
+                pathname={pathname}
+              />
+            ))}
+          </SidebarMenuSub>
+        </CollapsibleContent>
+      </SidebarMenuSubItem>
+    </Collapsible>
+  );
+}
+
+// Top-level nav node — a leaf link, or a toggle-only collapsible group
+// (sidebar-07 pattern: the whole row toggles its dropdown).
+function SidebarNavItem({
+  item,
+  pathname,
+}: {
+  item: DashboardNavItem;
+  pathname: string;
+}) {
+  const buttonClassName = cn("h-10 px-2.5", item.badge && "pr-20");
+  const iconClassName =
+    item.id === "profile" ? "text-sidebar-foreground" : "text-sidebar-primary";
+
+  // Leaf item — unchanged behavior.
+  if (!item.children?.length) {
+    return (
+      <SidebarMenuItem>
+        <SidebarMenuButton
+          asChild
+          tooltip={item.label}
+          isActive={pathname === item.href}
+          className={buttonClassName}
         >
-          <item.icon
-            className={
-              item.id === "profile"
-                ? "text-sidebar-foreground"
-                : "text-sidebar-primary"
-            }
-          />
-          <span>{item.label}</span>
-        </Link>
-      </SidebarMenuButton>
-      {item.badge ? (
-        <SidebarMenuBadge className="max-w-20 truncate">
-          {item.badge}
-        </SidebarMenuBadge>
-      ) : null}
-    </SidebarMenuItem>
+          <Link href={item.href} {...disabledLinkProps(item)}>
+            <item.icon className={iconClassName} />
+            <span>{item.label}</span>
+          </Link>
+        </SidebarMenuButton>
+        {item.badge ? (
+          <SidebarMenuBadge className="max-w-20 truncate">
+            {item.badge}
+          </SidebarMenuBadge>
+        ) : null}
+      </SidebarMenuItem>
+    );
+  }
+
+  // Group — sidebar-07 pattern: the whole row toggles the dropdown (no nav).
+  // Navigation to the section's overview is handled by its first child link.
+  const defaultOpen = item.defaultOpen || isBranchActive(item, pathname);
+
+  return (
+    <Collapsible
+      asChild
+      className="group/collapsible"
+      defaultOpen={defaultOpen}
+    >
+      <SidebarMenuItem>
+        <CollapsibleTrigger asChild>
+          <SidebarMenuButton
+            tooltip={item.label}
+            className={cn(buttonClassName, "cursor-pointer")}
+          >
+            <item.icon className={iconClassName} />
+            <span>{item.label}</span>
+            <ChevronRight className="ml-auto size-4 shrink-0 text-muted-foreground transition-transform group-data-[state=open]/collapsible:rotate-90" />
+          </SidebarMenuButton>
+        </CollapsibleTrigger>
+        <CollapsibleContent>
+          <SidebarMenuSub>
+            {item.children.map((child) => (
+              <SidebarNavSubItem
+                key={child.id}
+                item={child}
+                pathname={pathname}
+              />
+            ))}
+          </SidebarMenuSub>
+        </CollapsibleContent>
+      </SidebarMenuItem>
+    </Collapsible>
   );
 }
 
@@ -88,16 +195,25 @@ export function AppSidebar({
   isApprover = false,
   canApproveMembers = false,
   userName = "",
+  navData,
   ...props
 }: ComponentProps<typeof Sidebar> & {
   isApprover?: boolean;
   // Enabled domain leads can also reach Member Requests.
   canApproveMembers?: boolean;
   userName?: string;
+  // Serializable inputs for dynamic sub-nav (icons are attached client-side
+  // here, never passed across the RSC boundary).
+  navData?: { manageableDomains?: DomainId[] };
 }) {
   const pathname = usePathname();
-  const activeItem = getDashboardNavItemByPathname(pathname);
   const displayName = userName.trim() || "Member";
+
+  // Per-product dynamic sub-nav, keyed by nav-item id. Built client-side so
+  // Lucide icon components never cross the server→client boundary.
+  const navChildren: Record<string, DashboardNavItem[]> = {
+    opus: buildOpusNavChildren(navData?.manageableDomains ?? []),
+  };
   const initials = getInitials(userName);
 
   return (
@@ -145,8 +261,12 @@ export function AppSidebar({
                   {items.map((item) => (
                     <SidebarNavItem
                       key={item.id}
-                      item={item}
-                      isActive={activeItem.id === item.id}
+                      item={
+                        navChildren?.[item.id]
+                          ? { ...item, children: navChildren[item.id] }
+                          : item
+                      }
+                      pathname={pathname}
                     />
                   ))}
                 </SidebarMenu>
