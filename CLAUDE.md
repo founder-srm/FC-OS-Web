@@ -32,6 +32,23 @@ bunx drizzle-kit push     --config drizzle.config.ts   # apply schema to DB (NOT
 - **Never commit** `package-lock.json`, `pnpm-lock.yaml`, or `yarn.lock` (Bun only).
 - Lint/format is **Biome**, not ESLint/Prettier.
 
+## Memory graph (read before exploring, update after coding)
+
+A persistent knowledge graph of this whole repo lives in **`graphify-out/`** —
+`graph.json` (910 nodes / 59 communities), `GRAPH_REPORT.md` (god nodes, community
+map, surprising cross-doc links), `graph.html` (interactive).
+
+- **Before** spelunking files to answer a "how/where/why does X work" question, query the
+  graph first: `graphify query "<question>"` (or `/graphify query …`). It's the map —
+  faster than re-reading source. God nodes: `cn()`, `getAccessContext()`,
+  `requireWriteAccess()`, `Button()`.
+- **After** you change code, **keep the graph current** — it's the single memory of record:
+  - Code edits land automatically: the installed **post-commit hook** re-runs AST
+    extraction + rebuilds `graph.json`/`GRAPH_REPORT.md` on every `git commit`.
+  - Doc/image edits (`docs/`, `*.md`, `public/`) are **not** picked up by the hook —
+    run `/graphify --update` (or `graphify update`) yourself after changing them.
+  - Hook controls: `graphify hook status | install | uninstall`.
+
 ## Reference docs (keep this file lean — link, don't inline)
 
 - **Database / migrations workflow**: `docs/how-to-database.md`, `docs/pushing-migrations.md`
