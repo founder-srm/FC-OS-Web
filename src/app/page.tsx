@@ -1,7 +1,14 @@
 import Image from "next/image";
 import Link from "next/link";
 
-const HomePage = () => {
+import { getAuthState } from "@/lib/auth/context";
+
+export const dynamic = "force-dynamic";
+
+const HomePage = async () => {
+  const authState = await getAuthState();
+  const isSignedIn = authState.kind !== "unauthenticated";
+
   return (
     <main className="relative flex h-svh max-h-svh flex-1 overflow-hidden bg-background">
       <Image
@@ -18,18 +25,29 @@ const HomePage = () => {
           FC OS
         </div>
         <div className="flex items-center gap-4 font-serif mt-6">
-          <Link
-            href={"/login"}
-            className="text-xl px-5 py-1 backdrop-blur-xs rounded-xl border border-white/10 shadow-2xl"
-          >
-            Log In
-          </Link>
-          <Link
-            href={"/login"}
-            className="text-xl px-5 py-1 backdrop-blur-xs rounded-xl border border-white/10 shadow-2xl"
-          >
-            Request Access
-          </Link>
+          {isSignedIn ? (
+            <Link
+              href={"/dashboard"}
+              className="text-xl px-5 py-1 backdrop-blur-xs rounded-xl border border-white/10 shadow-2xl"
+            >
+              Dashboard
+            </Link>
+          ) : (
+            <>
+              <Link
+                href={"/login"}
+                className="text-xl px-5 py-1 backdrop-blur-xs rounded-xl border border-white/10 shadow-2xl"
+              >
+                Log In
+              </Link>
+              <Link
+                href={"/login"}
+                className="text-xl px-5 py-1 backdrop-blur-xs rounded-xl border border-white/10 shadow-2xl"
+              >
+                Request Access
+              </Link>
+            </>
+          )}
         </div>
       </div>
     </main>

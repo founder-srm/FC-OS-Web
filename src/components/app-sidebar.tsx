@@ -1,11 +1,11 @@
 "use client";
 
-import { ChevronRight } from "lucide-react";
+import { ChevronRight, LogOut } from "lucide-react";
 import Image from "next/image";
 import Link from "next/link";
-import { usePathname } from "next/navigation";
-import type { ComponentProps } from "react";
-
+import { usePathname, useRouter } from "next/navigation";
+import { type ComponentProps, useState } from "react";
+import { toast } from "sonner";
 import {
   Collapsible,
   CollapsibleContent,
@@ -20,6 +20,7 @@ import {
   SidebarGroupLabel,
   SidebarHeader,
   SidebarMenu,
+  SidebarMenuAction,
   SidebarMenuBadge,
   SidebarMenuButton,
   SidebarMenuItem,
@@ -29,6 +30,7 @@ import {
   SidebarRail,
   SidebarSeparator,
 } from "@/components/ui/sidebar";
+import { authClient } from "@/lib/auth/client";
 import {
   type DashboardNavItem,
   dashboardSidebarConfig,
@@ -207,7 +209,21 @@ export function AppSidebar({
   navData?: { manageableDomains?: DomainId[] };
 }) {
   const pathname = usePathname();
+  const router = useRouter();
+  const [loggingOut, setLoggingOut] = useState(false);
   const displayName = userName.trim() || "Member";
+
+  const handleLogout = async () => {
+    setLoggingOut(true);
+    const { error } = await authClient.signOut();
+    if (error) {
+      setLoggingOut(false);
+      toast.error(error.message ?? "Could not log out.");
+      return;
+    }
+    router.replace("/");
+    router.refresh();
+  };
 
   // Per-product dynamic sub-nav, keyed by nav-item id. Built client-side so
   // Lucide icon components never cross the server→client boundary.
@@ -303,6 +319,15 @@ export function AppSidebar({
               </h1>
             </Link>
           </SidebarMenuButton>
+          <SidebarMenuAction
+            onClick={handleLogout}
+            disabled={loggingOut}
+            title="Log out"
+            aria-label="Log out"
+            className="top-1/2 -translate-y-1/2 text-sidebar-foreground/70 hover:text-sidebar-foreground"
+          >
+            <LogOut />
+          </SidebarMenuAction>
         </SidebarMenuItem>
       </SidebarMenu>
       <SidebarRail />
