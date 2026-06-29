@@ -3,6 +3,7 @@
 import { Link2, Loader2, Pencil, Plus, Trash2, X } from "lucide-react";
 import { useState, useTransition } from "react";
 import { toast } from "sonner";
+import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import {
   Dialog,
@@ -13,6 +14,7 @@ import {
   DialogTitle,
 } from "@/components/ui/dialog";
 import { Input } from "@/components/ui/input";
+import { InputGroup } from "@/components/ui/input-group";
 import { Label } from "@/components/ui/label";
 import {
   Select,
@@ -21,7 +23,9 @@ import {
   SelectTrigger,
   SelectValue,
 } from "@/components/ui/select";
+import { Separator } from "@/components/ui/separator";
 import { Textarea } from "@/components/ui/textarea";
+import { statusFraction } from "@/lib/opus/format";
 import type { TaskInputDTO } from "../actions";
 import { AssigneePicker } from "./assignee-picker";
 import { DueDatePicker } from "./due-date-picker";
@@ -136,38 +140,221 @@ export function TaskFieldsDialog({
         onOpenChange(o);
       }}
     >
-      <DialogContent className="max-h-[90vh] overflow-y-auto sm:max-w-lg">
-        <DialogHeader>
-          <DialogTitle>{heading}</DialogTitle>
-          {description && <DialogDescription>{description}</DialogDescription>}
+      <DialogContent className="max-h-[90vh] overflow-y-auto sm:max-w-4xl p-6 space-y-4">
+        <DialogHeader className="flex-row items-center">
+          {description && <Badge>{description}</Badge>}
+          <Separator
+            orientation={"vertical"}
+            decorative
+            className="data-vertical:w-0.75 rounded-full"
+          />
+          <DialogTitle className="text-2xl font-semibold tracking-tight">
+            {heading}
+          </DialogTitle>
         </DialogHeader>
 
-        <div className="space-y-4">
+        <div className="space-y-6">
+          {/* Title Input */}
+          <div className="sm:flex items-center sm:gap-4">
+            <Label htmlFor="task-title" className="text-lg font-semibold">
+              Title
+            </Label>
+            <Input
+              type={"text"}
+              id="task-title"
+              value={values.title}
+              onChange={(e) => set("title", e.target.value)}
+              placeholder="Task title"
+              autoFocus
+              className="font-semibold capitalize"
+            />
+          </div>
+
+          {/* Description */}
+          <div className="sm:flex items-start sm:gap-4">
+            <Label htmlFor="task-desc" className="text-lg font-semibold">
+              Description
+            </Label>
+            <Textarea
+              id="task-desc"
+              value={values.description}
+              onChange={(e) => set("description", e.target.value)}
+              placeholder="Add description…"
+              rows={5}
+              className="text-base font-medium min-h-30"
+            />
+          </div>
+
+          {/* Due Date */}
+          {showDueDate && (
+            <div className="sm:flex items-center sm:gap-4">
+              <Label className="text-lg capitalize font-semibold">
+                Due date
+              </Label>
+              <DueDatePicker
+                value={values.dueDate}
+                onChange={(d) => set("dueDate", d)}
+              />
+            </div>
+          )}
+
+          {/* References */}
+          <div className="flex flex-col gap-2">
+            <div className="flex items-start gap-4">
+              <Label className="text-lg font-semibold">References</Label>
+              <Button
+                type="button"
+                variant="outline"
+                size={"sm"}
+                onClick={() =>
+                  set("links", [...values.links, { url: "", label: "" }])
+                }
+                className="font-medium"
+              >
+                <Plus strokeWidth={2.5} /> Add Reference
+              </Button>
+            </div>
+            <div className="flex-1 font-medium space-y-2">
+              {values.links.map((link, i) => (
+                // biome-ignore lint/suspicious/noArrayIndexKey: reference rows have no stable id
+                <div key={i} className="flex items-center gap-2">
+                  <Link2
+                    className="size-4 shrink-0 text-muted-foreground"
+                    strokeWidth={2.5}
+                  />
+                  <Input
+                    value={link.url}
+                    onChange={(e) =>
+                      set(
+                        "links",
+                        values.links.map((l, idx) =>
+                          idx === i ? { ...l, url: e.target.value } : l,
+                        ),
+                      )
+                    }
+                    placeholder="https://…"
+                    className="flex-1"
+                  />
+                  <Input
+                    value={link.label}
+                    onChange={(e) =>
+                      set(
+                        "links",
+                        values.links.map((l, idx) =>
+                          idx === i ? { ...l, label: e.target.value } : l,
+                        ),
+                      )
+                    }
+                    placeholder="Label"
+                    className="w-28"
+                  />
+                  <Button
+                    type="button"
+                    variant={"outline"}
+                    size="icon"
+                    className="shrink-0 text-muted-foreground"
+                    onClick={() =>
+                      set(
+                        "links",
+                        values.links.filter((_, idx) => idx !== i),
+                      )
+                    }
+                  >
+                    <X className="size-4" strokeWidth={2.5} />
+                  </Button>
+                </div>
+              ))}
+            </div>
+          </div>
+
+          {/* Sub Tasks */}
+          {showSubtasks && (
+            <div className="flex flex-col gap-6">
+              <div className="flex items-start gap-4">
+                <Label className="text-lg font-semibold">Subtasks</Label>
+                <Button
+                  type="button"
+                  variant="outline"
+                  size="sm"
+                  onClick={() => {
+                    setEditingIndex(null);
+                    setSubtaskOpen(true);
+                  }}
+                  className="font-medium capitalize"
+                >
+                  <Plus strokeWidth={2.5} /> Add subtask
+                </Button>
+              </div>
+
+              <div className="space-y-4">
+                {pending.map((p, i) => (
+                  <div
+                    key={p.id}
+                    className="border pr-1 py-1 rounded-xl flex items-center justify-between gap-3"
+                  >
+                    <p className="truncate flex-1 max-w-60 sm:max-w-lg text-base font-medium capitalize ml-4">
+                      {p.title}
+                    </p>
+                    <div className="flex items-center gap-1">
+                      <Button
+                        type="button"
+                        variant="outline"
+                        size="icon"
+                        className=""
+                        onClick={() => {
+                          setEditingIndex(i);
+                          setSubtaskOpen(true);
+                        }}
+                      >
+                        <Pencil className="" strokeWidth={2.5} />
+                      </Button>
+                      <Button
+                        type="button"
+                        variant="destructive"
+                        size="icon"
+                        className=""
+                        onClick={() =>
+                          setPending(pending.filter((_, idx) => idx !== i))
+                        }
+                      >
+                        <Trash2 className="" strokeWidth={2.5} />
+                      </Button>
+                    </div>
+                  </div>
+                ))}
+              </div>
+            </div>
+          )}
+        </div>
+
+        {/* <div className="space-y-6">
           <div className="space-y-1.5">
-            <Label htmlFor="task-title">Title</Label>
+            <Label htmlFor="task-title" className="text-base font-semibold">Title</Label>
             <Input
               id="task-title"
               value={values.title}
               onChange={(e) => set("title", e.target.value)}
               placeholder="What needs to be done?"
               autoFocus
+              className="text-base font-medium"
             />
           </div>
 
           <div className="space-y-1.5">
-            <Label htmlFor="task-desc">Description</Label>
+            <Label htmlFor="task-desc" className="text-base font-semibold">Description</Label>
             <Textarea
               id="task-desc"
               value={values.description}
               onChange={(e) => set("description", e.target.value)}
               placeholder="Add more detail…"
               rows={3}
+              className="text-base font-medium"
             />
           </div>
 
-          <div className="grid grid-cols-2 gap-3">
+          <div className="grid grid-cols-2 gap-4">
             <div className="space-y-1.5">
-              <Label>Status</Label>
+              <Label className="text-base font-semibold">Status</Label>
               <Select
                 value={values.statusId}
                 onValueChange={(v) => set("statusId", v)}
@@ -176,11 +363,11 @@ export function TaskFieldsDialog({
                   <SelectValue placeholder="Status" />
                 </SelectTrigger>
                 <SelectContent>
-                  {meta.statuses.map((s, i) => (
+                  {meta.statuses.map((s) => (
                     <SelectItem key={s.id} value={s.id}>
                       <StatusIcon
                         color={s.color}
-                        fraction={(i + 1) / meta.statuses.length}
+                        fraction={statusFraction(meta.statuses, s.id)}
                       />
                       {s.name}
                     </SelectItem>
@@ -189,7 +376,7 @@ export function TaskFieldsDialog({
               </Select>
             </div>
             <div className="space-y-1.5">
-              <Label>Priority</Label>
+              <Label className="text-base font-semibold">Priority</Label>
               <Select
                 value={values.priorityId || NO_PRIORITY}
                 onValueChange={(v) =>
@@ -213,7 +400,7 @@ export function TaskFieldsDialog({
 
           {showDueDate && (
             <div className="space-y-1.5">
-              <Label>Due date</Label>
+              <Label className="text-base font-semibold">Due date</Label>
               <DueDatePicker
                 value={values.dueDate}
                 onChange={(d) => set("dueDate", d)}
@@ -222,7 +409,7 @@ export function TaskFieldsDialog({
           )}
 
           <div className="space-y-1.5">
-            <Label>Assignees</Label>
+            <Label className="text-base font-semibold">Assignees</Label>
             <AssigneePicker
               members={meta.members}
               value={values.assigneeIds}
@@ -231,7 +418,7 @@ export function TaskFieldsDialog({
           </div>
 
           <div className="space-y-1.5">
-            <Label>Labels</Label>
+            <Label className="text-base font-semibold">Labels</Label>
             <LabelPicker
               labels={meta.labels}
               value={values.labelIds}
@@ -240,7 +427,7 @@ export function TaskFieldsDialog({
           </div>
 
           <div className="space-y-1.5">
-            <Label>References</Label>
+            <Label className="text-base font-semibold">References</Label>
             <div className="space-y-2">
               {values.links.map((link, i) => (
                 // biome-ignore lint/suspicious/noArrayIndexKey: reference rows have no stable id
@@ -303,7 +490,7 @@ export function TaskFieldsDialog({
 
           {showSubtasks && (
             <div className="space-y-1.5">
-              <Label>Subtasks</Label>
+              <Label className="text-base font-semibold">Subtasks</Label>
               <div className="space-y-2">
                 {pending.map((p, i) => (
                   <div
@@ -350,20 +537,88 @@ export function TaskFieldsDialog({
               </div>
             </div>
           )}
-        </div>
+        </div> */}
 
-        <DialogFooter>
-          <Button
-            variant="ghost"
-            onClick={() => onOpenChange(false)}
-            disabled={isSaving}
-          >
-            Cancel
-          </Button>
-          <Button onClick={submit} disabled={isSaving}>
-            {isSaving && <Loader2 className="size-4 animate-spin" />}
-            {submitLabel}
-          </Button>
+        <DialogFooter className="flex-col gap-6 sm:justify-between">
+          <div className="flex flex-wrap gap-3 items-start">
+            {/* Status */}
+            <div className="font-semibold">
+              <Select
+                value={values.statusId}
+                onValueChange={(v) => set("statusId", v)}
+              >
+                <SelectTrigger size={"sm"} className="w-full">
+                  <SelectValue placeholder="Status" />
+                </SelectTrigger>
+                <SelectContent>
+                  {meta.statuses.map((s, i) => (
+                    <SelectItem
+                      key={s.id}
+                      value={s.id}
+                      className="font-semibold"
+                    >
+                      <StatusIcon
+                        color={s.color}
+                        fraction={(i + 1) / meta.statuses.length}
+                      />
+                      {s.name}
+                    </SelectItem>
+                  ))}
+                </SelectContent>
+              </Select>
+            </div>
+            {/* Priority */}
+            <div className="font-semibold">
+              <Select
+                value={values.priorityId || NO_PRIORITY}
+                onValueChange={(v) =>
+                  set("priorityId", v === NO_PRIORITY ? "" : v)
+                }
+              >
+                <SelectTrigger size="sm" className="w-full">
+                  <SelectValue />
+                </SelectTrigger>
+                <SelectContent className="font-semibold">
+                  <SelectItem value={NO_PRIORITY}>No priority</SelectItem>
+                  {meta.priorities.map((p) => (
+                    <SelectItem key={p.id} value={p.id}>
+                      {p.name}
+                    </SelectItem>
+                  ))}
+                </SelectContent>
+              </Select>
+            </div>
+            {/* Asignee */}
+            <div className="font-semibold">
+              <AssigneePicker
+                members={meta.members}
+                value={values.assigneeIds}
+                onChange={(ids) => set("assigneeIds", ids)}
+              />
+            </div>
+            {/* Labels */}
+            <div className="font-semibold">
+              <LabelPicker
+                labels={meta.labels}
+                value={values.labelIds}
+                onChange={(ids) => set("labelIds", ids)}
+              />
+            </div>
+          </div>
+
+          <div className="flex items-center gap-2">
+            <Button
+              variant={"destructive"}
+              onClick={() => onOpenChange(false)}
+              disabled={isSaving}
+            >
+              Cancel
+            </Button>
+            <Button onClick={submit} disabled={isSaving}>
+              {isSaving && <Loader2 className="size-4 animate-spin" />}
+              {submitLabel}
+            </Button>
+          </div>
         </DialogFooter>
       </DialogContent>
 
@@ -372,7 +627,7 @@ export function TaskFieldsDialog({
           open={subtaskOpen}
           onOpenChange={setSubtaskOpen}
           heading={editingIndex === null ? "New subtask" : "Edit subtask"}
-          description="Subtasks inherit the parent task's due date."
+          description={description}
           submitLabel={editingIndex === null ? "Add" : "Save"}
           meta={meta}
           showDueDate={false}

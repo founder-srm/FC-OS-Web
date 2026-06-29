@@ -32,11 +32,11 @@ export function DueDatePicker({
             size="sm"
             disabled={disabled}
             className={cn(
-              "justify-start font-normal",
+              "justify-start font-medium",
               !value && "text-muted-foreground",
             )}
           >
-            <CalendarIcon className="size-4" />
+            <CalendarIcon className="size-4" strokeWidth={2.5} />
             {value
               ? value.toLocaleDateString(undefined, {
                   year: "numeric",

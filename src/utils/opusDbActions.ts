@@ -448,6 +448,18 @@ export const deleteOpusTask = async (taskId: string) => {
 };
 
 /**
+ * Sets a single task's (or subtask's) status. Used by the status-only control
+ * available to assignees — no board-position rewrite, so it works for subtasks
+ * too (which have no board presence).
+ */
+export const setOpusTaskStatus = async (taskId: string, statusId: string) => {
+  await db
+    .update(opusTasks)
+    .set({ statusId, updatedAt: new Date() })
+    .where(eq(opusTasks.id, taskId));
+};
+
+/**
  * Persists a drag-and-drop move: sets the moved task's status and rewrites the
  * positions of every task in the target column to match the client's order.
  */
@@ -511,6 +523,30 @@ export const reorderOpusStatuses = async (orderedIds: string[]) => {
         .update(opusStatuses)
         .set({ position: index })
         .where(eq(opusStatuses.id, id));
+    }
+  });
+};
+
+/**
+ * Atomically set a status's `ringFull` flag and rewrite positions from `orderedIds`.
+ * Used by the manage toggle: flipping to full auto-sinks the status below all dynamic
+ * ones, so the flag flip and the reorder must land together.
+ */
+export const setOpusStatusFull = async (
+  id: string,
+  ringFull: boolean,
+  orderedIds: string[],
+) => {
+  await db.transaction(async (tx) => {
+    await tx
+      .update(opusStatuses)
+      .set({ ringFull })
+      .where(eq(opusStatuses.id, id));
+    for (const [index, sid] of orderedIds.entries()) {
+      await tx
+        .update(opusStatuses)
+        .set({ position: index })
+        .where(eq(opusStatuses.id, sid));
     }
   });
 };

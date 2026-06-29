@@ -28,7 +28,6 @@ import {
   type DomainId,
   domainIcons,
   formatDomain,
-  isCancelledStatus,
   statusFraction,
 } from "@/lib/opus/format";
 import {
@@ -98,7 +97,6 @@ function Column({
   name,
   color,
   fraction,
-  isCancelled,
   taskIds,
   taskMap,
   meta,
@@ -108,7 +106,6 @@ function Column({
   name: string;
   color: string;
   fraction: number;
-  isCancelled: boolean;
   taskIds: string[];
   taskMap: Map<string, BoardTask>;
   meta: DomainMeta;
@@ -116,13 +113,9 @@ function Column({
 }) {
   const { setNodeRef, isOver } = useDroppable({ id: statusId });
   return (
-    <div className="flex w-72 shrink-0 flex-col">
+    <div className="flex w-80 shrink-0 flex-col">
       <div className="mb-2 flex items-center gap-2 px-1">
-        <StatusIcon
-          color={color}
-          fraction={fraction}
-          isCancelled={isCancelled}
-        />
+        <StatusIcon color={color} fraction={fraction} />
         <span className="text-sm font-semibold">{name}</span>
         <span className="rounded-full bg-muted px-1.5 text-xs text-muted-foreground">
           {taskIds.length}
@@ -268,8 +261,8 @@ export function KanbanBoard({
   const DomainIcon = domainIcons[domain as DomainId];
 
   return (
-    <div className="flex min-h-0 flex-1 flex-col gap-4">
-      <div className="flex items-center justify-between">
+    <div className="flex min-h-0 min-w-0 flex-1 flex-col gap-6 overflow-hidden">
+      <div className="flex shrink-0 items-center justify-between">
         <div className="flex items-center gap-3">
           <span className="flex size-10 items-center justify-center rounded-lg border bg-card text-primary">
             <DomainIcon className="size-5" />
@@ -278,19 +271,20 @@ export function KanbanBoard({
             <h1 className="font-serif text-3xl text-primary">
               {formatDomain(domain)}
             </h1>
-            <p className="text-sm text-muted-foreground">
+            <p className="text-sm text-muted-foreground font-medium">
               {tasks.length} task{tasks.length === 1 ? "" : "s"}
             </p>
           </div>
         </div>
+
         {canManage && (
-          <Button onClick={() => setCreateOpen(true)}>
+          <Button onClick={() => setCreateOpen(true)} className="font-medium">
             <Plus className="size-4" /> New task
           </Button>
         )}
       </div>
 
-      <ScrollArea className="flex-1">
+      <ScrollArea className="min-h-0 min-w-0 flex-1">
         <DndContext
           sensors={sensors}
           collisionDetection={closestCorners}
@@ -298,7 +292,7 @@ export function KanbanBoard({
           onDragOver={handleDragOver}
           onDragEnd={handleDragEnd}
         >
-          <div className="flex gap-4 pb-3">
+          <div className="flex gap-2 pb-3">
             {meta.statuses.map((s) => (
               <Column
                 key={s.id}
@@ -306,7 +300,6 @@ export function KanbanBoard({
                 name={s.name}
                 color={s.color}
                 fraction={statusFraction(meta.statuses, s.id)}
-                isCancelled={isCancelledStatus(s.name)}
                 taskIds={columns[s.id] ?? []}
                 taskMap={taskMap}
                 meta={meta}
@@ -343,7 +336,7 @@ export function KanbanBoard({
           open={createOpen}
           onOpenChange={setCreateOpen}
           heading="New task"
-          description={`Create a task in ${formatDomain(domain)}.`}
+          description={`${formatDomain(domain)}`}
           submitLabel="Create task"
           meta={meta}
           showDueDate

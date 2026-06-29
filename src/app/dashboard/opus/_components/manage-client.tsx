@@ -27,7 +27,7 @@ import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import type { OpusLabel } from "@/database/schemas/opus_labels";
 import type { OpusPriority } from "@/database/schemas/opus_priorities";
 import type { OpusStatus } from "@/database/schemas/opus_statuses";
-import { formatDomain } from "@/lib/opus/format";
+import { formatDomain, statusFraction } from "@/lib/opus/format";
 import {
   type ActionResult,
   createLabelAction,
@@ -39,6 +39,7 @@ import {
   renamePriorityAction,
   reorderPrioritiesAction,
   reorderStatusesAction,
+  setStatusFullAction,
   updateLabelAction,
   updateStatusAction,
 } from "../actions";
@@ -48,24 +49,36 @@ type MetaItem = (OpusStatus | OpusPriority) & { color?: string };
 
 const DEFAULT_STATUS_COLOR = "#6b7280";
 
+// Status rows can carry a full/dynamic ring flag; priorities can't.
+const isFull = (item: MetaItem) => "ringFull" in item && item.ringFull === true;
+
 function OrderedMetaSection({
   description,
   noun,
   items,
   withColor = false,
+  ringToggle = false,
   onCreate,
   onRename,
   onDelete,
   onReorder,
+  onToggleFull,
 }: {
   description: string;
   noun: string;
   items: MetaItem[];
   withColor?: boolean;
+  /** Enables the per-row full/dynamic ring toggle + ordering rule (statuses only). */
+  ringToggle?: boolean;
   onCreate: (name: string, color?: string) => Promise<ActionResult>;
   onRename: (id: string, name: string, color?: string) => Promise<ActionResult>;
   onDelete: (id: string) => Promise<ActionResult>;
   onReorder: (orderedIds: string[]) => Promise<ActionResult>;
+  onToggleFull?: (
+    id: string,
+    next: boolean,
+    orderedIds: string[],
+  ) => Promise<ActionResult>;
 }) {
   const router = useRouter();
   const [newName, setNewName] = useState("");
@@ -87,12 +100,48 @@ function OrderedMetaSection({
       router.refresh();
     });
 
+  // Dynamic statuses must stay above all full ones: the full flags, read in order,
+  // must be all-false then all-true (no dynamic after a full).
+  const orderIsValid = (ordered: MetaItem[]) => {
+    let seenFull = false;
+    for (const item of ordered) {
+      if (isFull(item)) seenFull = true;
+      else if (seenFull) return false;
+    }
+    return true;
+  };
+
   const move = (index: number, dir: -1 | 1) => {
     const target = index + dir;
     if (target < 0 || target >= items.length) return;
-    const ids = items.map((i) => i.id);
-    [ids[index], ids[target]] = [ids[target], ids[index]];
-    run(() => onReorder(ids), "Reordered.");
+    const next = [...items];
+    [next[index], next[target]] = [next[target], next[index]];
+    if (ringToggle && !orderIsValid(next)) {
+      toast.error("Dynamic statuses must stay above full ones.");
+      return;
+    }
+    run(() => onReorder(next.map((i) => i.id)), "Reordered.");
+  };
+
+  // Toggle a status full/dynamic, re-sorting so dynamics stay above fulls. A new full
+  // sinks to the top of the full block; a new dynamic rises to the bottom of the
+  // dynamic block.
+  const toggleFull = (item: MetaItem, next: boolean) => {
+    if (!onToggleFull) return;
+    const dynamics = items.filter((i) => !isFull(i) && i.id !== item.id);
+    const fulls = items.filter((i) => isFull(i) && i.id !== item.id);
+    // Inserting `item` between the two blocks lands it at the bottom of the dynamic
+    // block (→dynamic) or the top of the full block (→full) — valid either way.
+    const ordered = [...dynamics, item, ...fulls];
+    run(
+      () =>
+        onToggleFull(
+          item.id,
+          next,
+          ordered.map((i) => i.id),
+        ),
+      next ? "Marked full." : "Marked dynamic.",
+    );
   };
 
   return (
@@ -161,10 +210,31 @@ function OrderedMetaSection({
                 {withColor && (
                   <StatusIcon
                     color={colorOf(item)}
-                    fraction={(index + 1) / items.length}
+                    fraction={
+                      ringToggle
+                        ? statusFraction(
+                            items.map((i) => ({
+                              id: i.id,
+                              ringFull: isFull(i),
+                            })),
+                            item.id,
+                          )
+                        : (index + 1) / items.length
+                    }
                   />
                 )}
                 <span className="flex-1 text-sm">{item.name}</span>
+                {ringToggle && onToggleFull && (
+                  <Button
+                    variant="outline"
+                    size="sm"
+                    className="h-7 px-2 text-xs font-normal text-muted-foreground"
+                    disabled={isPending}
+                    onClick={() => toggleFull(item, !isFull(item))}
+                  >
+                    {isFull(item) ? "Full" : "Dynamic"}
+                  </Button>
+                )}
                 {withColor && (
                   <input
                     type="color"
@@ -446,9 +516,10 @@ export function ManageClient({
             <TabsContent value="statuses" className="pt-4">
               <OrderedMetaSection
                 noun="Status"
-                description="Columns on the kanban board, left to right. The ring fills further along the pipeline."
+                description="Columns on the kanban board, left to right. Dynamic statuses fill the ring further along the pipeline; mark a status Full for a complete ring (e.g. Done, Cancelled). Full statuses stay below the dynamic ones."
                 items={statuses}
                 withColor
+                ringToggle
                 onCreate={(name, color) =>
                   createStatusAction(domain, name, color ?? "#6b7280")
                 }
@@ -457,6 +528,9 @@ export function ManageClient({
                 }
                 onDelete={(id) => deleteStatusAction(domain, id)}
                 onReorder={(ids) => reorderStatusesAction(domain, ids)}
+                onToggleFull={(id, next, ids) =>
+                  setStatusFullAction(domain, id, next, ids)
+                }
               />
             </TabsContent>
             <TabsContent value="priorities" className="pt-4">

@@ -89,8 +89,8 @@ export default async function OpusOverviewPage() {
         })}
       </div>
 
-      <div className="grid gap-4 lg:grid-cols-2">
-        <Card>
+      <div className="grid gap-6 lg:grid-cols-2">
+        {/* <Card>
           <CardHeader>
             <CardTitle className="text-base">By status</CardTitle>
             <CardDescription>How your tasks are distributed.</CardDescription>
@@ -118,9 +118,67 @@ export default async function OpusOverviewPage() {
               })
             )}
           </CardContent>
-        </Card>
+        </Card> */}
+        <div className="p-6">
+          <h1 className="text-muted-foreground text-base font-medium">
+            By Status
+          </h1>
+          <div className="mt-4 space-y-4">
+            {overview.byStatus.length === 0 ? (
+              <p className="text-sm text-muted-foreground">No tasks yet.</p>
+            ) : (
+              overview.byStatus.map((s) => {
+                const pct = Math.round((s.count / overview.total) * 100);
+                return (
+                  <div key={s.name} className="space-y-0.5">
+                    <div className="flex items-center justify-between text-base font-medium">
+                      <span>{s.name}</span>
+                      <span className="text-muted-foreground">{s.count}</span>
+                    </div>
+                    <div className="h-1.5 w-full overflow-hidden rounded-full bg-muted">
+                      <div
+                        className="h-full rounded-full bg-primary"
+                        style={{ width: `${pct}%` }}
+                      />
+                    </div>
+                  </div>
+                );
+              })
+            )}
+          </div>
+        </div>
+        <div className="p-6">
+          <h1 className="text-muted-foreground text-base font-medium">
+            By Domain
+          </h1>
+          <div className="mt-4 flex items-start justify-start gap-6 flex-wrap">
+            {/* <div className="mt-4 space-y-4"> */}
+            {overview.byDomain.length === 0 ? (
+              <p className="text-sm text-muted-foreground">No tasks yet.</p>
+            ) : (
+              overview.byDomain.map((d) => {
+                const Icon = domainIcons[d.domain as DomainId];
+                return (
+                  <Link
+                    key={d.domain}
+                    href={`/dashboard/opus/tasks/${d.domain}`}
+                    className="flex items-center gap-1"
+                  >
+                    <div className="flex items-center gap-1.5 text-base font-medium px-3 py-1 rounded-full bg-primary text-primary-foreground">
+                      <Icon className="size-3.5" strokeWidth={2.5} />
+                      {formatDomain(d.domain)}
+                    </div>
+                    <span className="text-base font-medium px-3 py-1 rounded-full bg-primary text-primary-foreground">
+                      {d.count}
+                    </span>
+                  </Link>
+                );
+              })
+            )}
+          </div>
+        </div>
 
-        <Card>
+        {/* <Card>
           <CardHeader>
             <CardTitle className="text-base">By domain</CardTitle>
             <CardDescription>Where your work lives.</CardDescription>
@@ -146,17 +204,18 @@ export default async function OpusOverviewPage() {
               })
             )}
           </CardContent>
-        </Card>
+        </Card> */}
       </div>
 
-      <Card>
+      <Card className="h-100 overflow-y-scroll">
         <CardHeader>
-          <CardTitle className="text-base">Recently updated</CardTitle>
-          <CardDescription>Your latest assigned tasks.</CardDescription>
+          <CardTitle className="text-base font-medium capitalize text-muted-foreground">
+            Recently updated
+          </CardTitle>
         </CardHeader>
         <CardContent className="divide-y divide-border">
           {overview.recent.length === 0 ? (
-            <p className="py-2 text-sm text-muted-foreground">
+            <p className="py-2 text-base font-medium text-muted-foreground">
               Nothing assigned to you yet.
             </p>
           ) : (
@@ -166,18 +225,24 @@ export default async function OpusOverviewPage() {
                 <Link
                   key={t.id}
                   href={`/dashboard/opus/tasks/${t.domain}?task=${t.parentTaskId ?? t.id}`}
-                  className="flex items-center justify-between gap-3 py-3 first:pt-0 last:pb-0 hover:opacity-80"
+                  className="flex items-center justify-between gap-3 py-4 first:pt-4 last:pb-4 hover:bg-accent px-4 rounded-md"
                 >
-                  <div className="min-w-0">
-                    <p className="truncate text-sm font-medium">{t.title}</p>
-                    <p className="text-xs text-muted-foreground">
-                      {formatDomain(t.domain)} · {t.statusName}
-                    </p>
+                  <div className="min-w-0 space-y-3">
+                    <div className="flex items-center gap-2">
+                      <p className="truncate text-lg font-medium">{t.title}</p>
+                      <Badge variant={"link"} className="hover:no-underline">
+                        {t.statusName}
+                      </Badge>
+                    </div>
+                    <Badge variant={"outline"}>{formatDomain(t.domain)}</Badge>
                   </div>
                   {t.dueDate && (
-                    <div className="flex shrink-0 items-center gap-1.5 text-xs">
+                    <div className="flex shrink-0 items-center gap-1.5 text-base font-medium">
                       {overdue && (
-                        <AlarmClock className="size-3.5 text-destructive" />
+                        <AlarmClock
+                          className="size-3.5 text-destructive"
+                          strokeWidth={3}
+                        />
                       )}
                       <span
                         className={

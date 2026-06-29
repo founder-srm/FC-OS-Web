@@ -34,10 +34,12 @@ export const manageableDomains = (ctx: AccessContext): DomainId[] => {
 };
 
 /**
- * Can the user edit a specific task? Managers can edit any task in their domain;
- * plain members can edit only tasks they're assigned to.
+ * Can the user change a specific task's status? Managers can change any task in
+ * their domain; plain members can change only tasks they're assigned to. Status
+ * is the *only* field assigned members may change — full edits are manager-only
+ * (`canManageDomain`).
  */
-export const canEditTask = (
+export const canChangeTaskStatus = (
   ctx: AccessContext,
   domain: string,
   assigneeIds: string[],

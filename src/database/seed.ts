@@ -34,11 +34,11 @@ const ROLES = [
 ] as const;
 
 const DEFAULT_STATUSES = [
-  { name: "Backlog", position: 0, color: "#6b7280" },
-  { name: "Todo", position: 1, color: "#3b82f6" },
-  { name: "In Progress", position: 2, color: "#f59e0b" },
-  { name: "Done", position: 3, color: "#22c55e" },
-  { name: "Cancelled", position: 4, color: "#ef4444" },
+  { name: "Backlog", position: 0, color: "#6b7280", ringFull: false },
+  { name: "Todo", position: 1, color: "#3b82f6", ringFull: false },
+  { name: "In Progress", position: 2, color: "#f59e0b", ringFull: false },
+  { name: "Done", position: 3, color: "#22c55e", ringFull: true },
+  { name: "Cancelled", position: 4, color: "#ef4444", ringFull: true },
 ] as const;
 
 const DEFAULT_PRIORITIES = [
@@ -71,6 +71,7 @@ async function seed() {
           name: s.name,
           position: s.position,
           color: s.color,
+          ringFull: s.ringFull,
           isDefault: true,
         })),
       )

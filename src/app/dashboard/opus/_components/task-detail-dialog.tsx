@@ -8,6 +8,7 @@ import {
   Plus,
   Trash2,
 } from "lucide-react";
+import Link from "next/link";
 import { useCallback, useEffect, useState, useTransition } from "react";
 import { toast } from "sonner";
 import { Avatar, AvatarFallback } from "@/components/ui/avatar";
@@ -19,12 +20,18 @@ import {
   DialogHeader,
   DialogTitle,
 } from "@/components/ui/dialog";
+import {
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from "@/components/ui/select";
 import { Separator } from "@/components/ui/separator";
 import { Skeleton } from "@/components/ui/skeleton";
 import {
   formatDueDate,
   initials,
-  isCancelledStatus,
   isOverdue,
   labelTextColor,
   priorityBadgeClass,
@@ -36,6 +43,7 @@ import {
   addSubtaskAction,
   deleteTaskAction,
   loadTaskDetailAction,
+  setTaskStatusAction,
   type TaskInputDTO,
   updateTaskAction,
 } from "../actions";
@@ -54,6 +62,211 @@ function toValues(task: TaskFull): FormValues {
     labelIds: task.labelIds,
     links: task.links.map((l) => ({ url: l.url, label: l.label ?? "" })),
   };
+}
+
+function statusMetaFor(meta: DomainMeta, id: string) {
+  const s = meta.statuses.find((s) => s.id === id);
+  if (!s) return null;
+  return {
+    color: s.color,
+    fraction: statusFraction(meta.statuses, id),
+    name: s.name,
+  };
+}
+
+/** Static status pill — shown to viewers who can't change the status. */
+function StatusBadge({
+  meta,
+  statusId,
+  compact,
+}: {
+  meta: DomainMeta;
+  statusId: string;
+  compact?: boolean;
+}) {
+  const sm = statusMetaFor(meta, statusId);
+  return (
+    <Badge
+      variant="secondary"
+      className={cn(
+        "shrink-0 font-medium",
+        compact ? "gap-1 text-[10px]" : "gap-1.5 text-xs",
+      )}
+    >
+      {sm && (
+        <StatusIcon
+          color={sm.color}
+          fraction={sm.fraction}
+          size={compact ? 12 : undefined}
+        />
+      )}
+      {sm?.name}
+    </Badge>
+  );
+}
+
+/** Status dropdown — the one mutation assigned members may perform. */
+function StatusSelect({
+  meta,
+  statusId,
+  disabled,
+  onChange,
+}: {
+  meta: DomainMeta;
+  statusId: string;
+  disabled?: boolean;
+  onChange: (statusId: string) => void;
+}) {
+  return (
+    <Select value={statusId} onValueChange={onChange} disabled={disabled}>
+      <SelectTrigger size="sm" className="w-auto shrink-0 gap-1.5 font-medium">
+        <SelectValue />
+      </SelectTrigger>
+      <SelectContent>
+        {meta.statuses.map((s) => (
+          <SelectItem key={s.id} value={s.id} className="font-medium">
+            <StatusIcon
+              color={s.color}
+              fraction={statusFraction(meta.statuses, s.id)}
+            />
+            {s.name}
+          </SelectItem>
+        ))}
+      </SelectContent>
+    </Select>
+  );
+}
+
+/** Header badges (status / priority / due) + body (description, labels, assignees,
+ * links) for a single task — shared by the task detail dialog and the subtask
+ * drill-in dialog. */
+function TaskHeaderAndBody({
+  task,
+  meta,
+  canSetStatus,
+  statusPending,
+  onStatusChange,
+}: {
+  task: TaskFull;
+  meta: DomainMeta;
+  canSetStatus: boolean;
+  statusPending: boolean;
+  onStatusChange: (statusId: string) => void;
+}) {
+  const sm = statusMetaFor(meta, task.statusId);
+  const statusName = sm?.name ?? "";
+  const priority = meta.priorities.find((p) => p.id === task.priorityId);
+  const taskLabels = meta.labels.filter((l) => task.labelIds.includes(l.id));
+  const overdue = isOverdue(task.dueDate, statusName);
+
+  return (
+    <>
+      <DialogHeader>
+        <div className="flex flex-wrap items-center gap-2">
+          {canSetStatus ? (
+            <StatusSelect
+              meta={meta}
+              statusId={task.statusId}
+              disabled={statusPending}
+              onChange={onStatusChange}
+            />
+          ) : (
+            <StatusBadge meta={meta} statusId={task.statusId} />
+          )}
+          {priority && (
+            <Badge
+              variant="outline"
+              className={cn(
+                "text-xs font-medium",
+                priorityBadgeClass(priority.name),
+              )}
+            >
+              {priority.name}
+            </Badge>
+          )}
+          {task.dueDate && (
+            <span
+              className={cn(
+                "inline-flex items-center gap-1 text-xs font-semibold",
+                overdue ? "text-destructive" : "text-muted-foreground",
+              )}
+            >
+              <CalendarClock className="size-3.5" strokeWidth={2.5} />
+              {formatDueDate(task.dueDate)}
+            </span>
+          )}
+        </div>
+        <DialogTitle className="pt-4 text-4xl font-serif font-medium">
+          {task.title}
+        </DialogTitle>
+      </DialogHeader>
+
+      <div className="space-y-6">
+        {task.description && (
+          <p className="whitespace-pre-wrap text-base text-muted-foreground">
+            {task.description}
+          </p>
+        )}
+
+        {taskLabels.length > 0 && (
+          <div className="flex flex-wrap gap-1.5">
+            {taskLabels.map((l) => (
+              <span
+                key={l.id}
+                className="rounded-full px-2 py-0.5 text-xs font-medium"
+                style={{
+                  backgroundColor: l.color,
+                  color: labelTextColor(l.color),
+                }}
+              >
+                {l.name}
+              </span>
+            ))}
+          </div>
+        )}
+
+        {task.assignees.length > 0 && (
+          <div>
+            <div className="flex flex-wrap gap-2 font-medium">
+              {task.assignees.map((a) => (
+                <div
+                  key={a.id}
+                  className="flex items-center gap-1.5 rounded-full border py-0.5 pr-2.5 pl-0.5 text-sm"
+                >
+                  <Avatar className="size-5">
+                    <AvatarFallback className="text-[9px]">
+                      {initials(a.firstName, a.lastName)}
+                    </AvatarFallback>
+                  </Avatar>
+                  {a.firstName} {a.lastName}
+                </div>
+              ))}
+            </div>
+          </div>
+        )}
+
+        {task.links.length > 0 && (
+          <div className=" flex items-center gap-2">
+            <p className="text-xs font-medium text-muted-foreground">
+              References:
+            </p>
+            <div className="flex items-center gap-1 flex-wrap">
+              {task.links.map((l) => (
+                <Link key={l.id} href={l.url} target="_blank" rel="noreferrer">
+                  <Badge variant={"link"}>
+                    <ExternalLink strokeWidth={2.5} />
+                    <span className="truncate font-medium">
+                      {l.label ?? l.url}
+                    </span>
+                  </Badge>
+                </Link>
+              ))}
+            </div>
+          </div>
+        )}
+      </div>
+    </>
+  );
 }
 
 export function TaskDetailDialog({
@@ -76,7 +289,9 @@ export function TaskDetailDialog({
   const [editOpen, setEditOpen] = useState(false);
   const [subtaskOpen, setSubtaskOpen] = useState(false);
   const [editingSubtask, setEditingSubtask] = useState<TaskFull | null>(null);
+  const [viewingSubtaskId, setViewingSubtaskId] = useState<string | null>(null);
   const [isDeleting, startDelete] = useTransition();
+  const [statusPending, startStatus] = useTransition();
 
   const load = useCallback((id: string) => {
     setLoading(true);
@@ -88,30 +303,29 @@ export function TaskDetailDialog({
   useEffect(() => {
     if (taskId) load(taskId);
     else setDetail(null);
+    // A new (or cleared) task can't keep a stale subtask drilled in.
+    setViewingSubtaskId(null);
   }, [taskId, load]);
 
-  const statusMeta = (id: string) => {
-    const s = meta.statuses.find((s) => s.id === id);
-    if (!s) return null;
-    return {
-      color: s.color,
-      fraction: statusFraction(meta.statuses, id),
-      name: s.name,
-      isCancelled: isCancelledStatus(s.name),
-    };
-  };
-  const statusName =
-    meta.statuses.find((s) => s.id === detail?.statusId)?.name ?? "";
-  const priority = meta.priorities.find((p) => p.id === detail?.priorityId);
-  const taskLabels = meta.labels.filter((l) => detail?.labelIds.includes(l.id));
-  const canEdit =
-    canManage ||
-    (detail?.assignees.some((a) => a.id === currentUserId) ?? false);
-  const overdue = isOverdue(detail?.dueDate ?? null, statusName);
+  const canSetStatus = (assignees: { id: string }[]) =>
+    canManage || assignees.some((a) => a.id === currentUserId);
+  const viewingSubtask =
+    detail?.subtasks.find((s) => s.id === viewingSubtaskId) ?? null;
 
   function refresh() {
     if (taskId) load(taskId);
     onChanged();
+  }
+
+  function changeStatus(id: string, statusId: string) {
+    startStatus(async () => {
+      const res = await setTaskStatusAction(id, statusId);
+      if ("error" in res) {
+        toast.error(res.error);
+        return;
+      }
+      refresh();
+    });
   }
 
   function removeTask(id: string, isSubtask: boolean) {
@@ -133,10 +347,10 @@ export function TaskDetailDialog({
   return (
     <>
       <Dialog
-        open={taskId !== null && !editOpen && !subtaskOpen}
+        open={taskId !== null && !editOpen && !subtaskOpen && !viewingSubtaskId}
         onOpenChange={(o) => !o && onClose()}
       >
-        <DialogContent className="max-h-[90vh] overflow-y-auto sm:max-w-xl">
+        <DialogContent className="max-h-[90vh] overflow-y-auto sm:max-w-4xl p-6">
           {loading || !detail ? (
             <div className="space-y-3">
               <Skeleton className="h-6 w-2/3" />
@@ -145,118 +359,15 @@ export function TaskDetailDialog({
             </div>
           ) : (
             <>
-              <DialogHeader>
-                <div className="flex flex-wrap items-center gap-2">
-                  <Badge variant="secondary" className="gap-1.5">
-                    {(() => {
-                      const sm = statusMeta(detail.statusId);
-                      return sm ? (
-                        <StatusIcon
-                          color={sm.color}
-                          fraction={sm.fraction}
-                          isCancelled={sm.isCancelled}
-                        />
-                      ) : null;
-                    })()}
-                    {statusName}
-                  </Badge>
-                  {priority && (
-                    <Badge
-                      variant="outline"
-                      className={cn(
-                        "text-xs",
-                        priorityBadgeClass(priority.name),
-                      )}
-                    >
-                      {priority.name}
-                    </Badge>
-                  )}
-                  {detail.dueDate && (
-                    <span
-                      className={cn(
-                        "inline-flex items-center gap-1 text-xs",
-                        overdue ? "text-destructive" : "text-muted-foreground",
-                      )}
-                    >
-                      <CalendarClock className="size-3.5" />
-                      {formatDueDate(detail.dueDate)}
-                    </span>
-                  )}
-                </div>
-                <DialogTitle className="pt-1 text-xl">
-                  {detail.title}
-                </DialogTitle>
-              </DialogHeader>
+              <TaskHeaderAndBody
+                task={detail}
+                meta={meta}
+                canSetStatus={canSetStatus(detail.assignees)}
+                statusPending={statusPending}
+                onStatusChange={(s) => changeStatus(detail.id, s)}
+              />
 
-              <div className="space-y-5">
-                {detail.description && (
-                  <p className="whitespace-pre-wrap text-sm text-muted-foreground">
-                    {detail.description}
-                  </p>
-                )}
-
-                {taskLabels.length > 0 && (
-                  <div className="flex flex-wrap gap-1.5">
-                    {taskLabels.map((l) => (
-                      <span
-                        key={l.id}
-                        className="rounded px-1.5 py-0.5 text-xs font-medium"
-                        style={{
-                          backgroundColor: l.color,
-                          color: labelTextColor(l.color),
-                        }}
-                      >
-                        {l.name}
-                      </span>
-                    ))}
-                  </div>
-                )}
-
-                {detail.assignees.length > 0 && (
-                  <div>
-                    <p className="mb-1.5 text-xs font-medium text-muted-foreground">
-                      Assignees
-                    </p>
-                    <div className="flex flex-wrap gap-2">
-                      {detail.assignees.map((a) => (
-                        <div
-                          key={a.id}
-                          className="flex items-center gap-1.5 rounded-full border py-0.5 pr-2.5 pl-0.5 text-sm"
-                        >
-                          <Avatar className="size-5">
-                            <AvatarFallback className="text-[9px]">
-                              {initials(a.firstName, a.lastName)}
-                            </AvatarFallback>
-                          </Avatar>
-                          {a.firstName} {a.lastName}
-                        </div>
-                      ))}
-                    </div>
-                  </div>
-                )}
-
-                {detail.links.length > 0 && (
-                  <div>
-                    <p className="mb-1.5 text-xs font-medium text-muted-foreground">
-                      References
-                    </p>
-                    <div className="space-y-1">
-                      {detail.links.map((l) => (
-                        <a
-                          key={l.id}
-                          href={l.url}
-                          target="_blank"
-                          rel="noreferrer"
-                          className="flex items-center gap-1.5 text-sm text-primary hover:underline"
-                        >
-                          <ExternalLink className="size-3.5 shrink-0" />
-                          <span className="truncate">{l.label ?? l.url}</span>
-                        </a>
-                      ))}
-                    </div>
-                  </div>
-                )}
-
+              <div className="space-y-6">
                 <Separator />
 
                 <div>
@@ -266,7 +377,7 @@ export function TaskDetailDialog({
                       {detail.subtasks.length > 0 &&
                         ` (${detail.subtasks.length})`}
                     </p>
-                    {canEdit && (
+                    {canManage && (
                       <Button
                         variant="outline"
                         size="sm"
@@ -285,42 +396,48 @@ export function TaskDetailDialog({
                     </p>
                   ) : (
                     <div className="space-y-1.5">
-                      {detail.subtasks.map((st) => {
-                        const sm = statusMeta(st.statusId);
-                        return (
-                          <div
-                            key={st.id}
-                            className="flex items-center gap-2 rounded-md border px-2.5 py-1.5"
+                      {detail.subtasks.map((st) => (
+                        <div
+                          key={st.id}
+                          className="flex items-center gap-2 rounded-md border px-1 py-1 truncate transition-colors hover:border-primary/40 hover:bg-accent/40"
+                        >
+                          {canSetStatus(st.assignees) ? (
+                            <StatusSelect
+                              meta={meta}
+                              statusId={st.statusId}
+                              disabled={statusPending}
+                              onChange={(s) => changeStatus(st.id, s)}
+                            />
+                          ) : (
+                            <StatusBadge
+                              meta={meta}
+                              statusId={st.statusId}
+                              compact
+                            />
+                          )}
+                          <button
+                            type="button"
+                            onClick={() => setViewingSubtaskId(st.id)}
+                            className="flex flex-1 cursor-pointer items-center gap-2 justify-between overflow-hidden text-left"
                           >
-                            <Badge
-                              variant="secondary"
-                              className="shrink-0 gap-1 text-[10px]"
-                            >
-                              {sm && (
-                                <StatusIcon
-                                  color={sm.color}
-                                  fraction={sm.fraction}
-                                  size={12}
-                                  isCancelled={sm.isCancelled}
-                                />
-                              )}
-                              {sm?.name}
-                            </Badge>
-                            <span className="flex-1 truncate text-sm">
+                            <span className="flex-1 truncate text-sm max-w-70 sm:max-w-lg">
                               {st.title}
                             </span>
-                            {st.assignees.slice(0, 2).map((a) => (
-                              <Avatar key={a.id} className="size-5">
-                                <AvatarFallback className="text-[9px]">
-                                  {initials(a.firstName, a.lastName)}
-                                </AvatarFallback>
-                              </Avatar>
-                            ))}
-                            {canEdit && (
+                            <div className="flex items-center -space-x-1.5">
+                              {st.assignees.slice(0, 2).map((a) => (
+                                <Avatar key={a.id} className="size-5">
+                                  <AvatarFallback className="text-[9px]">
+                                    {initials(a.firstName, a.lastName)}
+                                  </AvatarFallback>
+                                </Avatar>
+                              ))}
+                            </div>
+                          </button>
+                          {canManage && (
+                            <div className="flex items-center gap-1">
                               <Button
-                                variant="ghost"
+                                variant="outline"
                                 size="icon"
-                                className="size-7 text-muted-foreground"
                                 onClick={() => {
                                   setEditingSubtask(st);
                                   setSubtaskOpen(true);
@@ -328,49 +445,87 @@ export function TaskDetailDialog({
                               >
                                 <Pencil className="size-3.5" />
                               </Button>
-                            )}
-                            {canManage && (
                               <Button
-                                variant="ghost"
+                                variant="destructive"
                                 size="icon"
-                                className="size-7 text-muted-foreground"
                                 disabled={isDeleting}
                                 onClick={() => removeTask(st.id, true)}
                               >
                                 <Trash2 className="size-3.5" />
                               </Button>
-                            )}
-                          </div>
-                        );
-                      })}
+                            </div>
+                          )}
+                        </div>
+                      ))}
                     </div>
                   )}
                 </div>
               </div>
 
-              {(canEdit || canManage) && (
+              {canManage && (
                 <div className="flex justify-between gap-2 border-t pt-4">
-                  {canManage ? (
-                    <Button
-                      variant="ghost"
-                      size="sm"
-                      className="text-destructive hover:text-destructive"
-                      disabled={isDeleting}
-                      onClick={() => removeTask(detail.id, false)}
-                    >
-                      {isDeleting && (
-                        <Loader2 className="size-4 animate-spin" />
-                      )}
-                      Delete task
-                    </Button>
-                  ) : (
-                    <span />
-                  )}
-                  {canEdit && (
-                    <Button size="sm" onClick={() => setEditOpen(true)}>
-                      <Pencil className="size-4" /> Edit
-                    </Button>
-                  )}
+                  <Button
+                    variant="destructive"
+                    size="sm"
+                    className="text-destructive hover:text-destructive"
+                    disabled={isDeleting}
+                    onClick={() => removeTask(detail.id, false)}
+                  >
+                    {isDeleting && <Loader2 className="size-4 animate-spin" />}
+                    <Trash2 strokeWidth={2.5} />
+                    Delete task
+                  </Button>
+                  <Button size="sm" onClick={() => setEditOpen(true)}>
+                    <Pencil className="size-4" /> Edit
+                  </Button>
+                </div>
+              )}
+            </>
+          )}
+        </DialogContent>
+      </Dialog>
+
+      {/* Drill into a subtask to read its full details. */}
+      <Dialog
+        open={viewingSubtask !== null && !editOpen && !subtaskOpen}
+        onOpenChange={(o) => !o && setViewingSubtaskId(null)}
+      >
+        <DialogContent className="max-h-[90vh] overflow-y-auto sm:max-w-4xl p-6">
+          {viewingSubtask && (
+            <>
+              <TaskHeaderAndBody
+                task={viewingSubtask}
+                meta={meta}
+                canSetStatus={canSetStatus(viewingSubtask.assignees)}
+                statusPending={statusPending}
+                onStatusChange={(s) => changeStatus(viewingSubtask.id, s)}
+              />
+
+              {canManage && (
+                <div className="flex justify-between gap-2 border-t pt-4">
+                  <Button
+                    variant="destructive"
+                    size="sm"
+                    className="text-destructive hover:text-destructive"
+                    disabled={isDeleting}
+                    onClick={() => {
+                      removeTask(viewingSubtask.id, true);
+                      setViewingSubtaskId(null);
+                    }}
+                  >
+                    {isDeleting && <Loader2 className="size-4 animate-spin" />}
+                    <Trash2 strokeWidth={2.5} />
+                    Delete subtask
+                  </Button>
+                  <Button
+                    size="sm"
+                    onClick={() => {
+                      setEditingSubtask(viewingSubtask);
+                      setSubtaskOpen(true);
+                    }}
+                  >
+                    <Pencil className="size-4" /> Edit
+                  </Button>
                 </div>
               )}
             </>
@@ -405,8 +560,8 @@ export function TaskDetailDialog({
         <TaskFieldsDialog
           open={subtaskOpen}
           onOpenChange={setSubtaskOpen}
-          heading={editingSubtask ? "Edit subtask" : "New subtask"}
-          description="Subtasks inherit the parent task's due date."
+          heading={"Subtask"}
+          description={editingSubtask ? "Editing" : "Creating New"}
           submitLabel={editingSubtask ? "Save" : "Add subtask"}
           meta={meta}
           showDueDate={false}

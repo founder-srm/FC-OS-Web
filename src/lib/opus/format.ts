@@ -52,22 +52,23 @@ const CLOSED_STATUS = new Set(["Done", "Cancelled"]);
 export const isStatusClosed = (name: string) => CLOSED_STATUS.has(name);
 
 /**
- * Cancelled is a terminal state, not a completion step: it renders as a cross
- * instead of a progress ring, and is excluded from the ring's fraction so the
- * step before it (e.g. "Done") reads as the final/full state.
+ * Ring fraction for a status. A status flagged `ringFull` always renders a complete
+ * ring (a "finished" state, e.g. Done / Cancelled); otherwise it fills by its rank
+ * among the dynamic (non-full) statuses, so the last dynamic one also reaches a full
+ * ring. Full statuses are kept ordered below all dynamic ones, so this single rule
+ * drives every surface (board, selects, manage) identically.
  */
-export const isCancelledStatus = (name: string) => name === "Cancelled";
-
-/** Ring fraction for an ordered status list, skipping the Cancelled terminal. */
 export const statusFraction = (
-  statuses: { id: string; name: string }[],
+  statuses: { id: string; ringFull: boolean }[],
   id: string,
 ): number => {
-  const pipeline = statuses.filter((s) => !isCancelledStatus(s.name));
-  if (pipeline.length === 0) return 0;
-  const index = pipeline.findIndex((s) => s.id === id);
+  const target = statuses.find((s) => s.id === id);
+  if (!target) return 0;
+  if (target.ringFull) return 1;
+  const dynamic = statuses.filter((s) => !s.ringFull);
+  const index = dynamic.findIndex((s) => s.id === id);
   if (index < 0) return 0;
-  return (index + 1) / pipeline.length;
+  return (index + 1) / dynamic.length;
 };
 
 /** A due date is "overdue" only while the task is still open. */

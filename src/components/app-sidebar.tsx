@@ -1,6 +1,6 @@
 "use client";
 
-import { ChevronRight, LogOut } from "lucide-react";
+import { ChevronRight, Loader2, LogOut } from "lucide-react";
 import Image from "next/image";
 import Link from "next/link";
 import { usePathname, useRouter } from "next/navigation";
@@ -20,7 +20,6 @@ import {
   SidebarGroupLabel,
   SidebarHeader,
   SidebarMenu,
-  SidebarMenuAction,
   SidebarMenuBadge,
   SidebarMenuButton,
   SidebarMenuItem,
@@ -294,42 +293,37 @@ export function AppSidebar({
 
       <SidebarSeparator className="mx-auto" />
 
-      <SidebarFooter className="">
-        {/* <div className="rounded-lg border border-sidebar-border bg-sidebar-accent/30 px-3 py-2 group-data-[collapsible=icon]:hidden">
-          <p className="truncate text-sm font-medium text-sidebar-foreground">
-            {activeItem.label}
-          </p>
-          <p className="text-xs text-sidebar-foreground/70">
-            {activeItem.description}
-          </p>
-        </div> */}
+      <SidebarFooter className="gap-1">
+        <SidebarMenu>
+          <SidebarMenuItem>
+            <SidebarMenuButton size="lg" asChild tooltip={displayName}>
+              <Link href="/dashboard/profile">
+                <Avatar size="lg">
+                  <AvatarFallback className="rounded-lg font-serif leading-snug">
+                    {initials}
+                  </AvatarFallback>
+                  <AvatarBadge className="bg-primary" />
+                </Avatar>
+                <span className="truncate font-serif text-2xl text-sidebar-foreground">
+                  {displayName}
+                </span>
+              </Link>
+            </SidebarMenuButton>
+          </SidebarMenuItem>
+          <SidebarMenuItem>
+            <SidebarMenuButton
+              onClick={handleLogout}
+              disabled={loggingOut}
+              tooltip="Log out"
+              aria-label="Log out"
+              className="text-sidebar-foreground/70 transition-colors hover:bg-destructive/10 hover:text-destructive focus-visible:bg-destructive/10 focus-visible:text-destructive active:bg-destructive/15 active:text-destructive disabled:opacity-60"
+            >
+              {loggingOut ? <Loader2 className="animate-spin" /> : <LogOut />}
+              <span>{loggingOut ? "Logging out…" : "Log out"}</span>
+            </SidebarMenuButton>
+          </SidebarMenuItem>
+        </SidebarMenu>
       </SidebarFooter>
-      <SidebarMenu>
-        <SidebarMenuItem className="flex items-center justify-center">
-          <SidebarMenuButton size={"lg"} asChild>
-            <Link href={"/dashboard/profile"}>
-              <Avatar size={"lg"}>
-                <AvatarFallback className="rounded-lg font-serif leading-snug">
-                  {initials}
-                </AvatarFallback>
-                <AvatarBadge className="bg-primary" />
-              </Avatar>
-              <h1 className="truncate font-serif text-2xl text-sidebar-foreground">
-                {displayName}
-              </h1>
-            </Link>
-          </SidebarMenuButton>
-          <SidebarMenuAction
-            onClick={handleLogout}
-            disabled={loggingOut}
-            title="Log out"
-            aria-label="Log out"
-            className="top-1/2 -translate-y-1/2 text-sidebar-foreground/70 hover:text-sidebar-foreground"
-          >
-            <LogOut />
-          </SidebarMenuAction>
-        </SidebarMenuItem>
-      </SidebarMenu>
       <SidebarRail />
     </Sidebar>
   );

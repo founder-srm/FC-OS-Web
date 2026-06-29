@@ -4,7 +4,7 @@ import { revalidatePath } from "next/cache";
 import { z } from "zod";
 import { getAccessContext, requireWriteAccess } from "@/lib/auth/context";
 import { isDomainId } from "@/lib/opus/format";
-import { canEditTask, canManageDomain } from "@/lib/opus/permissions";
+import { canChangeTaskStatus, canManageDomain } from "@/lib/opus/permissions";
 import {
   countTasksWithPriority,
   countTasksWithStatus,
@@ -28,6 +28,8 @@ import {
   priorityDomainsByIds,
   reorderOpusPriorities,
   reorderOpusStatuses,
+  setOpusStatusFull,
+  setOpusTaskStatus,
   statusDomain,
   statusDomainsByIds,
   type TaskWriteInput,
@@ -184,7 +186,7 @@ export async function updateTaskAction(
 
   const info = await getTaskAuthInfo(taskId);
   if (!info) return { error: "Task not found." };
-  if (!canEditTask(ctx, info.domain, info.assigneeIds)) {
+  if (!canManageDomain(ctx, info.domain)) {
     return { error: "You can't edit this task." };
   }
 
@@ -216,7 +218,7 @@ export async function addSubtaskAction(
   if (info.parentTaskId !== null) {
     return { error: "Subtasks can't have their own subtasks." };
   }
-  if (!canEditTask(ctx, info.domain, info.assigneeIds)) {
+  if (!canManageDomain(ctx, info.domain)) {
     return { error: "You can't edit this task." };
   }
 
@@ -254,7 +256,7 @@ export async function moveTaskAction(
 
   const info = await getTaskAuthInfo(taskId);
   if (!info) return { error: "Task not found." };
-  if (!canEditTask(ctx, info.domain, info.assigneeIds)) {
+  if (!canChangeTaskStatus(ctx, info.domain, info.assigneeIds)) {
     return { error: "You can't move this task." };
   }
   if (info.parentTaskId !== null) {
@@ -276,6 +278,34 @@ export async function moveTaskAction(
   }
 
   await moveOpusTask(taskId, parsed.data.toStatusId, parsed.data.targetOrder);
+  revalidateBoard(info.domain);
+  return { ok: true };
+}
+
+/**
+ * Status-only change for a single task or subtask — the one mutation assigned
+ * members (non-managers) may perform. Works for subtasks too (no board-position
+ * rewrite, unlike `moveTaskAction`).
+ */
+export async function setTaskStatusAction(
+  taskId: string,
+  statusId: string,
+): Promise<ActionResult> {
+  const ctx = await requireWriteAccess();
+  if ("error" in ctx) return ctx;
+
+  const info = await getTaskAuthInfo(taskId);
+  if (!info) return { error: "Task not found." };
+  if (!canChangeTaskStatus(ctx, info.domain, info.assigneeIds)) {
+    return { error: "You can't change this task's status." };
+  }
+
+  const meta = await getOpusDomainMeta(info.domain);
+  if (!meta.statuses.some((s) => s.id === statusId)) {
+    return { error: "Unknown status for this domain." };
+  }
+
+  await setOpusTaskStatus(taskId, statusId);
   revalidateBoard(info.domain);
   return { ok: true };
 }
@@ -385,6 +415,32 @@ export async function reorderStatusesAction(
     return { error: "Unknown status for this domain." };
   }
   await reorderOpusStatuses(orderedIds);
+  revalidateManage(domain);
+  return { ok: true };
+}
+
+/**
+ * Toggle a status's full/dynamic ring and reorder in one shot. `orderedIds` is the full
+ * status order the client computed (dynamic block first, full block last) — re-validated
+ * server-side so all ids belong to the domain.
+ */
+export async function setStatusFullAction(
+  domain: string,
+  id: string,
+  ringFull: boolean,
+  orderedIds: string[],
+): Promise<ActionResult> {
+  const ctx = await requireManager(domain);
+  if ("error" in ctx) return ctx;
+  const domains = await statusDomainsByIds(orderedIds);
+  if (
+    domains.length !== orderedIds.length ||
+    domains.some((d) => d !== domain) ||
+    !orderedIds.includes(id)
+  ) {
+    return { error: "Unknown status for this domain." };
+  }
+  await setOpusStatusFull(id, ringFull, orderedIds);
   revalidateManage(domain);
   return { ok: true };
 }

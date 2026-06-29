@@ -41,9 +41,9 @@ export function LabelPicker({
           type="button"
           variant="outline"
           size="sm"
-          className="w-full justify-start font-normal"
+          className="w-full justify-start font-semibold"
         >
-          <Tag className="size-4" />
+          <Tag className="size-4" strokeWidth={2.5} />
           {selected.length === 0 ? (
             <span className="text-muted-foreground">Add labels</span>
           ) : (
@@ -64,7 +64,7 @@ export function LabelPicker({
           )}
         </Button>
       </PopoverTrigger>
-      <PopoverContent className="w-64 p-0" align="start">
+      <PopoverContent className="w-64 p-0 font-semibold" align="start">
         <Command>
           <CommandInput placeholder="Search labels…" />
           <CommandList>
